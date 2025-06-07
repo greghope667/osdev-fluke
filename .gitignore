@@ -1,0 +1,6 @@
+**.d
+**.o
+build/
+bin/
+isodir/
+log.txt

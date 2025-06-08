@@ -2,13 +2,13 @@
 
 #include "types.h"
 
-inline extern void
+inline void
 io_outb(u16 addr, u8 val)
 {
     asm volatile ("outb\t%1, %0" : : "Nd"(addr), "a"(val));
 }
 
-inline extern u8
+inline u8
 io_inb(u16 addr)
 {
     u8 val;

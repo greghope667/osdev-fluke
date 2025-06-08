@@ -1,21 +1,17 @@
+#include "main.h"
+#include "console.h"
 #include "serial.h"
 #include "types.h"
-
-extern void* memchr(const void* p, int ch, unsigned long n);
-
-struct Symbol {
-    struct Symbol* next;
-    void* address;
-    char _space;
-    char type;
-    char length;
-    char name[];
-} __attribute__((packed));
+#include "panic.h"
 
 const struct Symbol* symbol_list = 0;
 
 void parse_symbol_table()
 {
+    static bool done = false;
+    if (done) return;
+    done = true;
+
     extern char __symbols[];
     char* symbols_text = (char*)__symbols;
 
@@ -37,7 +33,7 @@ void parse_symbol_table()
         sym->next = (struct Symbol*)symbols_text;
         sym = sym->next;
         sym->address = (void*)addr;
-        sym->length = (len < 127) ? len : 127;
+        sym->length = MIN(len, 127);
 
         symbols_text = &name[len+1];
     }
@@ -46,39 +42,49 @@ void parse_symbol_table()
     symbol_list = head.next;
 }
 
-void putchar(int c)
-{
-    serial_write(c);
+static struct Outputs {
+    bool serial, console;
+} outputs;
+
+void write(const char* data, isize length) {
+    if (outputs.console) for (isize i=0; i<length; i++) console_write(data[i]);
+    if (outputs.serial) for (isize i=0; i<length; i++) serial_write(data[i]);
 }
 
-void puts(const char* s)
+int putchar(int c)
 {
-    while (*s)
-        serial_write(*s++);
+    char ch = c;
+    write(&ch, 1);
+    return c;
 }
 
-void putnumber(usize n)
+int puts(const char* s)
 {
-    char buf[17] = {};
-    for (int i=0; i<16; i++) {
-        buf[15 - i] = "0123456789abcdef"[n & 0xf];
-        n >>= 4;
-    }
-    puts(buf);
+    write(s, strlen(s));
+    putchar('\n');
+    return 0;
 }
 
 void entry(void* stack) {
     parse_symbol_table();
-    serial_detect();
+
+    int port = serial_init();
+    if (port) {
+        outputs.serial = true;
+        printf("serial port @%x started\n", port);
+    }
+
+    bootloader_init_display();
+    outputs.console = true;
+    printf("display initialised\n");
+
+    printf("boot stack %p\n", stack);
 
     for (const struct Symbol* s = symbol_list; s; s = s->next) {
-        putnumber((usize)s->address);
-        putchar('\t');
-        putchar(s->type);
-        putchar('\t');
-        puts(s->name);
-        putchar('\n');
+        printf("%p\t%c\t%s\n", s->address, s->type, s->name);
     }
+
+    panic("reached end of main");
 
     (void)stack;
 }

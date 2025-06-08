@@ -20,3 +20,29 @@ typedef size_t usize;
 #define EOF -1
 
 #define ARRAY_LENGTH(x) ((isize)((sizeof(x))/(sizeof(x[0]))))
+
+#define MAX(a, b) ({        \
+    auto _x = (a);          \
+    auto _y = (b);          \
+    _x > _y ? _x : _y;      \
+})
+
+#define MIN(a, b) ({        \
+    auto _x = (a);          \
+    auto _y = (b);          \
+    _x < _y ? _x : _y;      \
+})
+
+#define CLAMP(v, min, max) ({   \
+    auto _v = (v);              \
+    auto _min = (min);          \
+    auto _max = (max);          \
+    _v < _min ? _min : (_v > _max ? _max : _v); \
+})
+
+#define CLAMP_T(T, v, min, max) ({  \
+    T _v = (v);                     \
+    T _min = (min);                 \
+    T _max = (max);                 \
+    _v < _min ? _min : (_v > _max ? _max : _v); \
+})

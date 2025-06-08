@@ -1,6 +1,6 @@
 **.d
 **.o
-build/
-bin/
-isodir/
+build
+bin
+isodir
 log.txt

@@ -1,0 +1,7 @@
+#!/bin/sh
+TMP=/tmp/fluke-osdev
+rm -r bin build
+mkdir -p $TMP/bin $TMP/build
+ln -s $TMP/bin bin
+ln -s $TMP/build build
+make dirs

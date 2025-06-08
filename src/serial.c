@@ -2,6 +2,10 @@
 #include "io_port.h"
 #include "types.h"
 
+// TODO: move these
+u8 io_inb(u16 addr);
+void io_outb(u16 addr, u8 byte);
+
 /* Serial port - in IO space
  * struct serial {
  *     union {
@@ -127,20 +131,27 @@ const u16 serial_address[] = {
 static u16 port;
 
 int
-serial_detect()
+serial_init()
 {
+    static bool done = false;
+    if (done) return port;
+
     for (int i=0; i<ARRAY_LENGTH(serial_address); i++) {
         if (serial_detect_setup(serial_address[i])) {
             port = serial_address[i];
+            done = true;
             return port;
         }
     }
-    return -1;
+    return 0;
 }
 
 void
 serial_write(char c)
 {
+    if (c == '\n')
+        serial_write('\r');
+
     while (!(io_inb(port + REG_LINE_STATUS) & LINE_STATUS_TX_EMPTY))
         __builtin_ia32_pause();
     io_outb(port, c);

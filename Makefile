@@ -11,7 +11,7 @@ LIMINE_DATA ?= /usr/share/limine
 
 dirs:
 	mkdir -p bin
-	mkdir -p build/src
+	mkdir -p build/src/font
 	mkdir -p isodir/boot/limine
 	mkdir -p isodir/EFI/BOOT
 
@@ -27,10 +27,10 @@ CFLAGS +=\
 	-mno-red-zone \
 	-mcmodel=kernel \
 	-fno-pie \
-	-nostdlib \
 	-fno-omit-frame-pointer \
 	-fno-stack-protector \
-	-ffreestanding
+	-ffreestanding \
+	-fbuiltin
 
 ifneq (,$(findstring clang,$(CC)))
 	CFLAGS +=\
@@ -41,7 +41,7 @@ else
 		-mpreferred-stack-boundary=3
 endif
 
-C_SRCS = $(wildcard src/*.c)
+C_SRCS = $(shell find src -name '*.c')
 ASM_SRCS = $(wildcard src/*.s)
 OBJS = $(ASM_SRCS:%.s=build/%.o) $(C_SRCS:%.c=build/%.o)
 DEPS = $(C_SRCS:%.c=build/%.d)

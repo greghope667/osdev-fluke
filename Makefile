@@ -12,6 +12,7 @@ LIMINE_DATA ?= /usr/share/limine
 dirs:
 	mkdir -p bin
 	mkdir -p build/src/font
+	mkdir -p build/src/forth
 	mkdir -p isodir/boot/limine
 	mkdir -p isodir/EFI/BOOT
 
@@ -32,17 +33,20 @@ CFLAGS +=\
 	-ffreestanding \
 	-fbuiltin
 
+ASMFLAGS += -g3
+
 ifneq (,$(findstring clang,$(CC)))
 	CFLAGS +=\
 		--target=x86_64-elf \
 		-mstack-alignment=3
+	ASMFLAGS += -fno-integrated-as
 else
 	CFLAGS +=\
 		-mpreferred-stack-boundary=3
 endif
 
 C_SRCS = $(shell find src -name '*.c')
-ASM_SRCS = $(wildcard src/*.s)
+ASM_SRCS = $(shell find src -name '*.s')
 OBJS = $(ASM_SRCS:%.s=build/%.o) $(C_SRCS:%.c=build/%.o)
 DEPS = $(C_SRCS:%.c=build/%.d)
 
@@ -52,7 +56,7 @@ build/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -MMD -MF build/$*.d -o $@
 
 build/%.o: %.s
-	$(CC) -c $< -o $@
+	$(CC) $(ASMFLAGS) -c $< -o $@
 
 bin/os.elf: $(OBJS) src/linker.ld
 	$(CC) $(CFLAGS) $(OBJS) -T src/linker.ld -o $@
@@ -98,10 +102,11 @@ iso: bin/os.iso
 all: elf iso
 
 clean:
-	rm -f $(OBJS) $(DEPS) bin/os.elf bin/os.iso isodir/boot/os.elf
+	find build/ -type f -delete
+	rm -f bin/os.elf bin/os.iso isodir/boot/os.elf
 
 run: iso
-	qemu-system-x86_64 -serial stdio -cdrom bin/os.iso | tee log.txt
+	qemu-system-x86_64 -serial stdio -cdrom bin/os.iso -no-reboot | tee log.txt
 
 debug: elf iso
 	konsole -e qemu-system-x86_64 -serial stdio -cdrom bin/os.iso -s -S &

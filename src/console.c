@@ -1,6 +1,6 @@
 #include "console.h"
 #include "font/font.h"
-#include "main.h"
+#include "main.h" // IWYU pragma: keep
 
 static struct Framebuffer fb = {};
 

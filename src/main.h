@@ -15,6 +15,9 @@ int putchar(int);
 int puts(const char*);
 int printf(const char*, ...) __attribute__((format(printf, 1, 2)));
 
+#define isupper(ch) ({ auto _ch = (ch); (_ch >= 'A') && (_ch <= 'Z'); })
+#define isprint(ch) ({ auto _ch = (ch); (_ch >= ' ') && (_ch <= 127); })
+
 void write(const char*, isize);
 
 struct Symbol {

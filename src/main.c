@@ -3,6 +3,7 @@
 #include "serial.h"
 #include "types.h"
 #include "panic.h"
+#include "forth/forth.h"
 
 const struct Symbol* symbol_list = 0;
 
@@ -65,13 +66,19 @@ int puts(const char* s)
     return 0;
 }
 
+const char* lines[] = {
+    "1 2 3 swap",
+    "1 : x if 2 else 3 then ; false x true x",
+    ": x 0 3 - begin dup while dup . 1+ repeat drop ; x",
+};
+
 void entry(void* stack) {
     parse_symbol_table();
 
     int port = serial_init();
     if (port) {
         outputs.serial = true;
-        printf("serial port @%x started\n", port);
+        printf("serial port @%x initialised\n", port);
     }
 
     bootloader_init_display();
@@ -80,8 +87,22 @@ void entry(void* stack) {
 
     printf("boot stack %p\n", stack);
 
+    puts("~~~ Symbols ~~~");
     for (const struct Symbol* s = symbol_list; s; s = s->next) {
-        printf("%p\t%c\t%s\n", s->address, s->type, s->name);
+        if (isupper(s->type))
+            printf("%p\t%c\t%s\n", s->address, s->type, s->name);
+    }
+
+    forth_init();
+
+    puts("\n~~~ Forth Words ~~~");
+    for (const struct Forth_header* f = forth_headers; f; f = f->next) {
+        printf("%p\t%p\t%i\t%i\t%s\n", f, forth_header_to_xt(f), f->immediate, f->name_length, f->name);
+    }
+
+    static isize fstack[16];
+    for (int i=0; i<ARRAY_LENGTH(lines); i++) {
+        forth_interpret(lines[i], strlen(lines[i]), fstack+1);
     }
 
     panic("reached end of main");

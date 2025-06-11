@@ -5,6 +5,7 @@
 #include "panic.h"
 #include "forth/forth.h"
 #include "symbols.h"
+#include "x86_64/time.h"
 
 static struct Outputs {
     bool serial, console;
@@ -29,6 +30,17 @@ int puts(const char* s)
     return 0;
 }
 
+void
+klog(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    auto time = timestamp();
+    printf("[ %6zi.%06zu ] ", time.seconds, time.nanoseconds / 1000);
+    vprintf(fmt, args);
+    va_end(args);
+}
+
 const char* lines[] = {
     "1 2 3 swap",
     "1 : x if 2 else 3 then ; false x true x",
@@ -41,34 +53,45 @@ void entry(void* stack) {
     int port = serial_init();
     if (port) {
         outputs.serial = true;
-        printf("serial port @%x initialised\n", port);
+        klog("entry: serial port @%x initialised\n", port);
     }
 
     bootloader_init_display();
     outputs.console = true;
-    printf("display initialised\n");
+    klog("entry: display initialised\n");
 
-    printf("boot stack %p\n", stack);
+    tsc_init();
+
+    klog("entry: boot stack %p\n", stack);
 
     {
         puts("~~~ Symbols ~~~");
         int local = 0, global = 0;
         for (const struct Symbol* s = symbol_list; s; s = s->next) {
             if (isupper(s->type)) {
-                printf("%p\t%c\t%s\n", s->address, s->type, s->name);
+                //printf("%p\t%c\t%s\n", s->address, s->type, s->name);
+                printf("%s ", s->name);
                 global++;
             } else {
                 local++;
             }
         }
-        printf("Total: global %i local %i\n", global, local);
+        putchar('\n');
+        klog("entry: total symbols: global %i local %i\n", global, local);
     }
 
     forth_init();
 
-    puts("\n~~~ Forth Words ~~~");
-    for (const struct Forth_header* f = forth_headers; f; f = f->next) {
-        printf("%p\t%p\t%i\t%i\t%s\n", f, forth_header_to_xt(f), f->immediate, f->name_length, f->name);
+    {
+        int words = 0;
+        puts("\n~~~ Forth Words ~~~");
+        for (const struct Forth_header* f = forth_headers; f; f = f->next) {
+            //printf("%p\t%p\t%i\t%i\t%s\n", f, forth_header_to_xt(f), f->immediate, f->name_length, f->name);
+            printf("%s ", f->name);
+            words++;
+        }
+        putchar('\n');
+        klog("entry: total forth words: %i\n", words);
     }
 
     static isize fstack[16];

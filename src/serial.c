@@ -1,6 +1,6 @@
 #include "serial.h"
 
-#include "io_port.h"
+#include "x86_64/io_port.h"
 #include "kdef.h"
 #include "panic.h"
 

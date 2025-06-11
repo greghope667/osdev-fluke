@@ -108,7 +108,7 @@ run: iso
 	qemu-system-x86_64 -serial stdio -cdrom bin/os.iso -no-reboot | tee log.txt
 
 debug: elf iso
-	konsole -e qemu-system-x86_64 -serial stdio -cdrom bin/os.iso -s -S &
+	konsole -e qemu-system-x86_64 -serial stdio -cdrom bin/os.iso -s -S -d int &
 	@exec gdb bin/os.elf -q \
 		-iex "set debuginfod enabled off" \
 		-ex "target remote localhost:1234"

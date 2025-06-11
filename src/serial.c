@@ -1,6 +1,8 @@
 #include "serial.h"
+
 #include "io_port.h"
-#include "types.h"
+#include "kdef.h"
+#include "panic.h"
 
 // TODO: move these
 u8 io_inb(u16 addr);
@@ -133,13 +135,11 @@ static u16 port;
 int
 serial_init()
 {
-    static bool done = false;
-    if (done) return port;
+    INIT_ONCE
 
     for (int i=0; i<ARRAY_LENGTH(serial_address); i++) {
         if (serial_detect_setup(serial_address[i])) {
             port = serial_address[i];
-            done = true;
             return port;
         }
     }
@@ -149,6 +149,7 @@ serial_init()
 void
 serial_write(char c)
 {
+    assert(port);
     if (c == '\n')
         serial_write('\r');
 
@@ -160,6 +161,7 @@ serial_write(char c)
 int
 serial_read()
 {
+    assert(port);
     if (io_inb(port + REG_LINE_STATUS) & LINE_STATUS_DATA_READY)
         return io_inb(port);
     else

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include "kdef.h"
 
 struct Framebuffer {
     void* restrict address;

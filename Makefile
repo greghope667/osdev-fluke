@@ -3,16 +3,16 @@
 
 ### Customisation
 
-CFLAGS ?= -Og -g3
 CC ?= gcc
+CFLAGS ?= -Og -g3
+ASMFLAGS ?= -g3
 LIMINE_DATA ?= /usr/share/limine
 
 ### Build directories
 
 dirs:
-	mkdir -p bin
-	mkdir -p build/src/font
-	mkdir -p build/src/forth
+	mkdir -p bin build
+	find src/ -type d -print0 | xargs -0 -I X mkdir -p build/X
 	mkdir -p isodir/boot/limine
 	mkdir -p isodir/EFI/BOOT
 
@@ -20,6 +20,7 @@ dirs:
 
 CFLAGS +=\
 	-std=gnu23 \
+	-Isrc \
 	-Wall \
 	-Wextra \
 	-static \
@@ -32,8 +33,6 @@ CFLAGS +=\
 	-fno-stack-protector \
 	-ffreestanding \
 	-fbuiltin
-
-ASMFLAGS += -g3
 
 ifneq (,$(findstring clang,$(CC)))
 	CFLAGS +=\

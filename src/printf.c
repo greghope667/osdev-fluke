@@ -1,8 +1,6 @@
-#include "main.h"
-#include "panic.h"
-#include "types.h"
+#include "klib.h"
 
-#include <stdarg.h>
+#include "panic.h"
 
 struct fmt_specifier {
     int precision;      // %.7s
@@ -234,6 +232,13 @@ print_fmt_arg(const char** fmt, va_list args)
             case '.':
                 state = PRECISION;
                 afmt.has_precision = true;
+                break;
+
+            case '*':
+                if (state != PRECISION)
+                    panic("invalid format string");
+                afmt.has_precision = true;
+                afmt.precision = va_arg(args, int);
                 break;
 
             default:

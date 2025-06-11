@@ -1,6 +1,8 @@
 #include "console.h"
+
 #include "font/font.h"
-#include "main.h" // IWYU pragma: keep
+#include "klib.h" // IWYU pragma: keep
+#include "panic.h"
 
 static struct Framebuffer fb = {};
 
@@ -13,6 +15,8 @@ static struct Console {
 void
 console_init(const struct Framebuffer* pfb)
 {
+    INIT_ONCE
+
     memcpy(&fb, pfb, sizeof(fb));
     console = (struct Console){
         .maxx = fb.width / 8,
@@ -62,7 +66,7 @@ printable(char ch) { return (ch >= ' ') && (ch < 127); }
 void
 console_putcharat(char ch, int x, int y, Color fg, Color bg)
 {
-    if (x < console.maxx && y < console.maxy) {
+    if (0 <= x && x < console.maxx && 0 <= y && y < console.maxy) {
         if (!printable(ch)) ch = ' ';
         putcharat_unchecked(ch, x, y, fg, bg);
     }
@@ -107,6 +111,8 @@ clear_line(int y)
 void
 console_write(char ch)
 {
+    assert(console.maxx && console.maxy);
+
     if (ch == '\n') {
         console.x = 0;
         console.y++;

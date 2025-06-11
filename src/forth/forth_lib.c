@@ -1,6 +1,8 @@
 #include "forth.h"
-#include "../main.h" // IWYU pragma: keep
-#include "../panic.h"
+
+#include "klib.h" // IWYU pragma: keep
+#include "panic.h"
+#include "symbols.h"
 
 static const struct Forth_header*
 lookup_word(const struct Forth_header* dict, const char* name, isize len)
@@ -84,14 +86,10 @@ forth_str_to_num(struct Forth_context*, isize stack[], isize stack_use)
     return stack_use;
 }
 
-isize // ( caddr u -- s )
+const struct Symbol* // ( caddr u -- s )
 forth_find_symbol(const char* name, isize len)
 {
-    for (const struct Symbol* s = symbol_list; s; s = s->next) {
-        if (s->length == len && isupper(s->type) && memcmp(s->name, name, len) == 0)
-            return (isize)s;
-    }
-    return 0;
+    return ksym_n(name, len);
 }
 
 isize
@@ -135,15 +133,15 @@ extern struct Forth_body _interpret;
 int
 forth_interpret(const char* text, isize chars, isize stack[])
 {
-    static u8 data_space[4096];
+    static u8 interpret_data_space[4096];
     static const Forth_xt program[2] = { &_interpret, &_exitforth };
-    memset(data_space, 0, sizeof(data_space));
+    memset(interpret_data_space, 0, sizeof(interpret_data_space));
 
     isize stack_usage = 0;
 
     struct Forth_context ctx = {
         .dictionary = forth_headers,
-        .here = data_space,
+        .here = interpret_data_space,
         .tib = text,
         .ntib = chars,
         .to_in = 0,
@@ -162,7 +160,7 @@ forth_interpret(const char* text, isize chars, isize stack[])
 void
 forth_init()
 {
-    static u8 data_space[4096];
+    static u8 init_data_space[4096];
     static const char init_code[] = {
         #embed "startup.4th"
     };
@@ -172,7 +170,7 @@ forth_init()
 
     struct Forth_context ctx = {
         .dictionary = forth_headers,
-        .here = data_space,
+        .here = init_data_space,
         .tib = init_code,
         .ntib = sizeof(init_code),
         .to_in = 0,
@@ -181,7 +179,7 @@ forth_init()
     isize ret = forth_exec(&ctx, program, init_stack+1, 0);
     if (ret != 0)
         panic("forth code startup failure");
-    if (ctx.here > (void*)&data_space[sizeof(data_space)])
+    if (ctx.here > (void*)&init_data_space[sizeof(init_data_space)])
         panic("forth init code overran data space");
 
     forth_headers = ctx.dictionary;

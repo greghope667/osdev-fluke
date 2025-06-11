@@ -3,3 +3,4 @@
 -Wextra
 -std=gnu23
 -fbuiltin
+-Isrc

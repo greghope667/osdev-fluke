@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.h"
+#include "kdef.h"
 
 inline void
 io_outb(u16 addr, u8 val)

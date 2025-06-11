@@ -1,6 +1,8 @@
 #include "panic.h"
+
 #include "console.h"
-#include "main.h"
+#include "klib.h" // IWYU pragma: keep
+#include "symbols.h"
 
 static const struct Symbol*
 symbol_of_address(void* address)

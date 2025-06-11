@@ -1,6 +1,7 @@
+#include "bootloader.h"
 #include "console.h"
-#include "main.h"
 #include "panic.h"
+
 #include <limine.h>
 
 const volatile struct limine_framebuffer_request

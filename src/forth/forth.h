@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../types.h"
+#include "kdef.h"
 
 struct Forth_header {
     const struct Forth_header* next;

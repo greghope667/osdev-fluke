@@ -7,9 +7,10 @@
         .global _hcf
 _start:
         cli
+        lea     rdi, [rsp + 0xff8]
+        and     rdi, ~0xfff             # Calculate top of stack
         xor     ebp, ebp
-        push    rbp
-        lea     rdi, [rsp + 16]
+        push    rbp                     # Create end of rbp call chain
         call    entry
 _hcf:
         cli

@@ -26,4 +26,7 @@ void write(const char*, isize);
 /* Ctypes approximations */
 
 #define isupper(ch) ({ auto _ch = (ch); (_ch >= 'A') && (_ch <= 'Z'); })
-#define isprint(ch) ({ auto _ch = (ch); (_ch >= ' ') && (_ch <= 127); })
+#define isprint(ch) ({ auto _ch = (ch); (_ch >= ' ') && (_ch <= 126); })
+
+//void* kmalloc(usize);
+//void* kfree(void*, usize);

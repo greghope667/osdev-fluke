@@ -52,3 +52,7 @@ typedef size_t usize;
     T _max = (max);                 \
     _v < _min ? _min : (_v > _max ? _max : _v); \
 })
+
+#define PACKED __attribute__((packed))
+
+#define PAGE_SIZE 0x1000

@@ -1,11 +1,16 @@
+#include "alloc.h"
 #include "klib.h"
 #include "console.h"
 #include "bootloader.h"
+#include "pmm.h"
 #include "serial.h"
 #include "panic.h"
 #include "forth/forth.h"
 #include "symbols.h"
+#include "x86_64/cpu.h"
 #include "x86_64/time.h"
+#include "x86_64/descriptors.h"
+#include "x86_64/cpu.h"
 
 static struct Outputs {
     bool serial, console;
@@ -99,7 +104,21 @@ void entry(void* stack) {
         forth_interpret(lines[i], strlen(lines[i]), fstack+1);
     }
 
+    x86_64_load_early_descriptors();
+
+    bootloader_run_setup();
+
+    alloc_print_info();
+    pmm_print_info();
+
+    this_cpu->user_stack = 3;
+
+
     panic("reached end of main");
+    for (;;) {
+        asm volatile ("sti\nhlt");
+    }
+
 
     (void)stack;
 }

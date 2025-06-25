@@ -1,7 +1,5 @@
 #include "klib.h"
 
-#include "panic.h"
-
 struct fmt_specifier {
     int precision;      // %.7s
     int width;          // %4u

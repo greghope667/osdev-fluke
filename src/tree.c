@@ -1,7 +1,6 @@
 #include "tree.h"
 
 #include "klib.h"
-#include "panic.h"
 
 typedef struct Tree_node Node;
 typedef struct Tree Tree;

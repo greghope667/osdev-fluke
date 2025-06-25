@@ -1,6 +1,5 @@
 #include "alloc.h"
 #include "klib.h"
-#include "panic.h"
 
 int alloc_calc_size_class(usize);
 void* kalloc(usize);

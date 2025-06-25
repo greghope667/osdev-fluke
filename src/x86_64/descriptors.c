@@ -1,7 +1,6 @@
 #include "descriptors.h"
-#include "kdef.h"
-#include "alloc.h"
-#include "panic.h"
+#include "klib.h"
+#include "mem/alloc.h"
 #include "msr.h"
 
 /* Access byte bits for code/data segments:
@@ -136,7 +135,7 @@ lgdt(const struct GDT* gdt)
         "lgdt   %[lgdt]\n"
         "push   %[cs]\n"
         "push   $1f\n"
-        "retfq  \n"
+        "lretq  \n"
         "1:\n"
         "mov    %[ss], %%ss\n"
         "mov    %[ds], %%ds\n"

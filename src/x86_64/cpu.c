@@ -1,6 +1,5 @@
 #include "cpu.h"
-#include "alloc.h"
-#include "panic.h"
+#include "mem/alloc.h"
 #include "msr.h"
 #include "klib.h"
 

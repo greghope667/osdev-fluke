@@ -1,7 +1,6 @@
 #include "pmm.h"
 
 #include "memory.h"
-#include "panic.h"
 #include "klib.h"
 
 usize hhdm_offset;

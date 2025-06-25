@@ -31,3 +31,10 @@ kfree(void* ptr, usize size)
 }
 
 void alloc_print_info();
+
+#define xmalloc(x) ({                                                \
+    extern void panic(const char* reason) __attribute__((noreturn)); \
+    void* ptr = (kalloc(x));                                         \
+    if (!ptr) panic("allocation failure");                           \
+    ptr;                                                             \
+})

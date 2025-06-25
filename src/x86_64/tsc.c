@@ -3,7 +3,6 @@
 #include "cpuid.h"
 #include "io_port.h"
 #include "klib.h"
-#include "panic.h"
 
 u64 rdtsc();
 u64 nanoseconds();

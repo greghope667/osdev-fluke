@@ -1,6 +1,5 @@
 #include "mmu.h"
-#include "alloc.h"
-#include "panic.h"
+#include "mem/alloc.h"
 #include "klib.h"
 
 static void* mmu_alloc_page()

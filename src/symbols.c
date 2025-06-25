@@ -1,7 +1,6 @@
 #include "symbols.h"
 
 #include "klib.h"
-#include "panic.h"
 
 const struct Symbol* symbol_list = 0;
 

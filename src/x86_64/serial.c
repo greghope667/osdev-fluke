@@ -1,8 +1,7 @@
 #include "serial.h"
 
-#include "x86_64/io_port.h"
-#include "kdef.h"
-#include "panic.h"
+#include "io_port.h"
+#include "klib.h"
 
 // TODO: move these
 u8 io_inb(u16 addr);

@@ -1,53 +1,20 @@
-#include "alloc.h"
+#include "mem/alloc.h"
+#include "mem/pmm.h"
+
+#include "print/dest.h"
+#include "print/serial.h"
+
 #include "klib.h"
-#include "console.h"
 #include "bootloader.h"
-#include "pmm.h"
-#include "serial.h"
-#include "panic.h"
-#include "forth/forth.h"
 #include "symbols.h"
+
 #include "x86_64/cpu.h"
 #include "x86_64/mmu.h"
 #include "x86_64/time.h"
 #include "x86_64/descriptors.h"
 #include "x86_64/cpu.h"
-#include "tree.h"
-#include "memory.h"
 
-static struct Outputs {
-    bool serial, console;
-} outputs;
-
-void write(const char* data, isize length) {
-    if (outputs.console) for (isize i=0; i<length; i++) console_write(data[i]);
-    if (outputs.serial) for (isize i=0; i<length; i++) serial_write(data[i]);
-}
-
-int putchar(int c)
-{
-    char ch = c;
-    write(&ch, 1);
-    return c;
-}
-
-int puts(const char* s)
-{
-    write(s, strlen(s));
-    putchar('\n');
-    return 0;
-}
-
-void
-klog(const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    auto time = timestamp();
-    printf("[ %6zi.%06zu ] ", time.seconds, time.nanoseconds / 1000);
-    vprintf(fmt, args);
-    va_end(args);
-}
+#include "forth/forth.h"
 
 const char* lines[] = {
     "1 2 3 swap",
@@ -72,12 +39,12 @@ void entry(void* stack) {
 
     int port = serial_init();
     if (port) {
-        outputs.serial = true;
+        print_dest_enable(PRINT_DEST_SERIAL);
         klog("entry: serial port @%x initialised\n", port);
     }
 
     bootloader_init_display();
-    outputs.console = true;
+    print_dest_enable(PRINT_DEST_CONSOLE);
     klog("entry: display initialised\n");
 
     tsc_init();

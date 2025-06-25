@@ -1,6 +1,6 @@
 #pragma once
-
-#include "kdef.h"
+// IWYU pragma: always_keep
+#include "kdef.h" // IWYU pragma: export
 
 /* Common kernel functions, mostly libc functions (or variants thereof) */
 
@@ -20,7 +20,6 @@ int puts(const char*);
 int printf(const char*, ...) __attribute__((format(printf, 1, 2)));
 int vprintf(const char*, va_list args);
 void klog(const char*, ...) __attribute__((format(printf, 1, 2)));
-
 void write(const char*, isize);
 
 /* Ctypes approximations */
@@ -28,8 +27,21 @@ void write(const char*, isize);
 #define isupper(ch) ({ auto _ch = (ch); (_ch >= 'A') && (_ch <= 'Z'); })
 #define isprint(ch) ({ auto _ch = (ch); (_ch >= ' ') && (_ch <= 126); })
 
-//void* kmalloc(usize);
-//void* kfree(void*, usize);
+/* Rounding to multiple of a given power of 2 */
 
 #define ROUND_DOWN_P2(val, power2) ((val) & ~((power2) - 1))
 #define ROUND_UP_P2(val, power2) (((val) + (power2) - 1) & ~((power2) - 1))
+
+/* Panic handling (formerly panic.h) */
+
+void panic(const char* reason) __attribute__((noreturn));
+void show_backtrace(void* frame);
+void show_backtrace_here();
+
+#define assert(x) if (!(x)) panic("assertion failure")
+
+#define INIT_ONCE {                         \
+    static bool _done = false;              \
+    if (_done) panic("INIT_ONCE check");    \
+    _done = true;                           \
+}

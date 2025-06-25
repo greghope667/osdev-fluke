@@ -1,7 +1,6 @@
 #include "forth.h"
 
-#include "klib.h" // IWYU pragma: keep
-#include "panic.h"
+#include "klib.h"
 #include "symbols.h"
 
 static const struct Forth_header*

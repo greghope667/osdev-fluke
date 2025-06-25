@@ -1,7 +1,5 @@
-#include "console.h"
-#include "kdef.h"
+#include "print/console.h"
 #include "klib.h"
-#include "panic.h"
 
 struct Context {
     usize registers[15];

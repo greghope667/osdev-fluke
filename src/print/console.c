@@ -1,8 +1,7 @@
 #include "console.h"
 
 #include "font/font.h"
-#include "klib.h" // IWYU pragma: keep
-#include "panic.h"
+#include "klib.h"
 
 static struct Framebuffer fb = {};
 

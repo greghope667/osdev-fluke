@@ -3,10 +3,10 @@
 /* Common macros and typedefs, as well as all (worthwile) freestanding c headers
  * This file is included by almost every header */
 
-#include <stdint.h>
-#include <stddef.h>
-#include <limits.h>
-#include <stdarg.h>
+#include <stdint.h> // IWYU pragma: export
+#include <stddef.h> // IWYU pragma: export
+#include <limits.h> // IWYU pragma: export
+#include <stdarg.h> // IWYU pragma: export
 
 typedef uint8_t u8;
 typedef uint16_t u16;

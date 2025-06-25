@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kdef.h"
-#include "memory.h"
+#include "mem/memory.h"
 
 enum mmu_mode {
     MMU_MODE_DEFAULT    = 0,

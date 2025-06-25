@@ -1,8 +1,7 @@
-#include "panic.h"
-
-#include "console.h"
-#include "klib.h" // IWYU pragma: keep
+#include "klib.h"
 #include "symbols.h"
+#include "print/console.h"
+#include "print/dest.h"
 
 static const struct Symbol*
 symbol_of_address(void* address)
@@ -19,6 +18,7 @@ symbol_of_address(void* address)
 void __attribute__((noreturn))
 panic(const char* reason)
 {
+    print_dest_enable(PRINT_DEST_CONSOLE);
     console_setcolor(COLOR_WHITE, COLOR_BLUE);
     extern void _hcf() __attribute__((noreturn));
     printf("\nKERNEL PANIC: %s\nbacktrace:\n", reason);

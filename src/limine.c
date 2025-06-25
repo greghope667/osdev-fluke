@@ -1,9 +1,8 @@
 #include "bootloader.h"
-#include "console.h"
+#include "print/console.h"
 #include "klib.h"
-#include "memory.h"
-#include "panic.h"
-#include "pmm.h"
+#include "mem/memory.h"
+#include "mem/pmm.h"
 
 #include <limine.h>
 

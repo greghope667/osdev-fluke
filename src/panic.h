@@ -11,3 +11,9 @@ void show_backtrace_here();
     if (_done) panic("INIT_ONCE check");    \
     _done = true;                           \
 }
+
+#define xmalloc(x) ({                       \
+    void* ptr = (kalloc(x));                \
+    if (!ptr) panic("allocation failure");  \
+    ptr;                                    \
+})

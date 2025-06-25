@@ -30,3 +30,6 @@ void write(const char*, isize);
 
 //void* kmalloc(usize);
 //void* kfree(void*, usize);
+
+#define ROUND_DOWN_P2(val, power2) ((val) & ~((power2) - 1))
+#define ROUND_UP_P2(val, power2) (((val) + (power2) - 1) & ~((power2) - 1))

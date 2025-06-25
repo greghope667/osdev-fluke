@@ -58,6 +58,7 @@ free_page(void *page)
     struct Page* vpage = page;
     vpage->next = pmm.free_list;
     pmm.free_list = vpage;
+    pmm.free_count++;
 }
 
 void

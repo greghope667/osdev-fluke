@@ -20,12 +20,12 @@ struct Cpu {
     u8 lapic_id;
 };
 
-static __seg_gs struct Cpu* const this_cpu = 0;
+#define this_cpu ((__seg_gs struct Cpu*)0)
 
 inline struct Cpu*
 get_cpu() { return this_cpu->self; }
 
-static struct Cpu* (*cpu_array)[];
-static int cpu_count;
+extern struct Cpu* (*cpu_array)[];
+extern int cpu_count;
 
 void x86_64_cpu_create_tls(u8 lapic_id, usize kernel_stack);

@@ -28,7 +28,7 @@ alloc_from_fresh_page(int size_class)
     if (!page)
         return nullptr;
 
-    int entry_count = (4096 / 8) >> size_class;
+    int entry_count = (PAGE_SIZE / 8) >> size_class;
     int size = 8 << size_class;
 
     struct Free_list* last = nullptr;

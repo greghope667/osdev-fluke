@@ -1,5 +1,8 @@
 #include "descriptors.h"
 #include "kdef.h"
+#include "alloc.h"
+#include "panic.h"
+#include "msr.h"
 
 /* Access byte bits for code/data segments:
  * 0   Accessed - we don't care about this
@@ -99,12 +102,10 @@ _Static_assert(sizeof(struct IDT_entry) == 16);
  * use this GDT instead to handle faults during initialisation */
 static const struct GDT early_gdt = {
     .kernel_code = {
-        NO_SEGMENT_LIMIT,
         .access = ACCESS_CODE,
         .flags = FLAG_CODE64,
     },
-    {
-        NO_SEGMENT_LIMIT,
+    .kernel_data = {
         .access = ACCESS_DATA,
     },
 };
@@ -144,7 +145,7 @@ lgdt(const struct GDT* gdt)
         "mov    %[ds], %%gs\n"
         :
         : [lgdt]"m"(lgdt),
-          [cs]"r"(cs),
+          [cs]"ri"(cs),
           [ss]"r"(ss),
           [ds]"r"(ds)
     );
@@ -159,10 +160,18 @@ lidt(const struct IDT* idt)
     asm volatile ("lidt %0" : : "m"(lidt));
 }
 
+static inline void
+ltr()
+{
+    u16 tss_offset = offsetof(struct GDT, tss);
+    asm volatile ("ltr %0" : : "r"(tss_offset));
+}
+
+
 static struct IDT idt;
 
 extern int isr_stubs_loc_asm[256];
-extern char syscall_loc_asm[];
+extern char syscall_entry_asm[];
 
 void
 x86_64_load_early_descriptors()
@@ -180,4 +189,67 @@ x86_64_load_early_descriptors()
         };
     }
     lidt(&idt);
+}
+
+static void
+enable_syscall()
+{
+    wrmsr(MSR_CSTAR, 0);
+    wrmsr(MSR_LSTAR, (usize)syscall_entry_asm);
+    wrmsr(MSR_SFMASK, 0x257fd5);
+
+    static const union STAR {
+        u64 value;
+        struct {
+            u32 _res;
+            u16 syscall_selector;
+            u16 sysret_selector;
+        };
+    } star_msr_contents = {
+        .syscall_selector = offsetof(struct GDT, kernel_code),
+        .sysret_selector = offsetof(struct GDT, user_64_code) + 3 - 16,
+    };
+    wrmsr(MSR_STAR, star_msr_contents.value);
+}
+
+void
+x86_64_load_descriptors(usize exception_stack)
+{
+    struct TSS* tss = xmalloc(sizeof(*tss));
+    *tss = (struct TSS) {
+        .rsp = { exception_stack },
+        .io_map_base = sizeof(*tss),
+    };
+    usize tss_address = (usize)tss;
+
+    struct GDT* gdt = xmalloc(sizeof(*gdt));
+    *gdt = (struct GDT) {
+        .kernel_code = {
+            .access = ACCESS_CODE,
+            .flags = FLAG_CODE64,
+        },
+        .kernel_data = {
+            .access = ACCESS_DATA,
+        },
+        .user_64_code = {
+            .access = ACCESS_CODE | ACCESS_USER,
+            .flags = FLAG_CODE64,
+        },
+        .user_64_data = {
+            .access = ACCESS_DATA | ACCESS_USER,
+        },
+        .tss = {
+            .access = ACCESS_TSS,
+            .base_15_0 = tss_address,
+            .base_23_16 = tss_address >> 16,
+            .base_31_24 = tss_address >> 24,
+            .base_63_32 = tss_address >> 32,
+            .limit_15_0 = sizeof(*tss),
+        },
+    };
+
+    lgdt(gdt);
+    lidt(&idt);
+    ltr();
+    enable_syscall();
 }

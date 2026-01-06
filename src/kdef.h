@@ -56,3 +56,5 @@ typedef size_t usize;
 #define PACKED __attribute__((packed))
 
 #define PAGE_SIZE 0x1000
+
+#define container_of(ptr, type, member) ((type*)((char*)ptr - offsetof(type, member)))

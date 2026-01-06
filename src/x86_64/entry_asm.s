@@ -1,4 +1,5 @@
 .intel_syntax noprefix
+#include "gdt.h"
 
         # Imports
         .global exception_kernel_entry
@@ -9,6 +10,7 @@
         # Exports
         .global isr_stubs_loc_asm
         .global syscall_entry_asm
+        .global exit_to_user_asm
 
 /* Stack layout on calling into C handler
  * A pointer to this structure is passed to C
@@ -60,8 +62,6 @@
         pop     r15
 .endm
 
-.equ    KERNEL_CS,      8
-
         .text
 
         .type exn_common, @function
@@ -71,7 +71,7 @@ exn_common:
         movzx   edi, byte ptr [rsp + 120]               # ISR number
         mov     rsi, rsp                                # ISR context structure
 
-        cmp     word ptr [rsp + 144], KERNEL_CS         # Test kernel/user entry
+        cmp     word ptr [rsp + 144], GDT_KERNEL_CODE   # Test kernel/user entry
         je      1f
 
         swapgs                                          # Load kernel GS
@@ -88,7 +88,7 @@ exn_common:
 
         .type isr_common, @function
 irq_common:
-        cmp     word ptr [rsp + 24], KERNEL_CS          # If entry from kernel
+        cmp     word ptr [rsp + 24], GDT_KERNEL_CODE    # If entry from kernel
         je      1f                                      # Skip loading kernel GS
         swapgs
 
@@ -103,7 +103,7 @@ irq_common:
         popall
         add     rsp, 16                                 # Pop ISR num and error code
 
-        cmp     word ptr [rsp + 24], KERNEL_CS          # If leaving to kernel
+        cmp     word ptr [rsp + 24], GDT_KERNEL_CODE    # If leaving to kernel
         je      2f                                      # Skip loading user GS
         swapgs
 2:      iretq
@@ -193,22 +193,18 @@ link_isr        %isrno
 .endr
 
 
-.equ    code64_user, 0x23
-.equ    data64_user, 0x1b
-.equ    cpu_user_sp, 8
-.equ    cpu_kernel_sp, 16
-
 # Syscall entry
         .text
+        .type syscall_entry_asm, @function
 syscall_entry_asm:
         swapgs
-        mov     gs:cpu_user_sp, rsp
-        mov     rsp, gs:cpu_kernel_sp
+        mov     gs:CPU_OFFSET_USER_SP, rsp
+        mov     rsp, gs:CPU_OFFSET_KERNEL_SP
 
-        push    data64_user                             # SS
-        push    gs:cpu_user_sp                          # RSP
+        push    GDT_USER_DATA                           # SS
+        push    gs:CPU_OFFSET_USER_SP                   # RSP
         push    r11                                     # RFLAGS
-        push    code64_user                             # CS
+        push    GDT_USER64_CODE                         # CS
         push    rcx                                     # RIP
         push    0
         push    0
@@ -221,6 +217,15 @@ syscall_entry_asm:
 
         popall
 
-        mov     rsp, gs:cpu_user_sp
+        mov     rsp, gs:CPU_OFFSET_USER_SP
         swapgs
         sysretq
+
+
+        .type exit_to_user_asm, @function
+exit_to_user_asm:
+        mov     rsp, rdi                                # ISR Context structure
+        popall
+        add     rsp, 16                                 # Pop ISR num and error code
+        swapgs
+        iretq

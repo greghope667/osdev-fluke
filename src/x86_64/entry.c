@@ -73,7 +73,13 @@ exception_kernel_entry(u8 exception, struct Context* ctx)
 void
 exception_user_entry(u8 exception, struct Context* ctx)
 {
+    console_setcolor(COLOR_BRIGHT_MAGENTA, COLOR_BLACK);
     klog("Exception %u  error %zx  cs %zu  ss %zu:\n", exception, ctx->error_code, ctx->cs, ctx->ss);
+    if (exception == 14) {
+        usize cr2;
+        asm ("mov   %%cr2, %0" : "=r"(cr2));
+        printf("Page fault address: %zx\n", cr2);
+    }
     print_registers(ctx);
     panic("Unhandled user exception");
 }
@@ -91,5 +97,5 @@ syscall_entry(struct Context* ctx)
 {
     klog("Syscall\n");
     print_registers(ctx);
-    panic("Unhandled syscall");
+    // panic("Unhandled syscall");
 }

@@ -2,6 +2,7 @@
 #include "klib.h"
 #include "mem/alloc.h"
 #include "msr.h"
+#include "gdt.h"
 
 /* Access byte bits for code/data segments:
  * 0   Accessed - we don't care about this
@@ -58,10 +59,16 @@ struct GDT {
     u64 null_entry;
     struct GDT_segment kernel_code;
     struct GDT_segment kernel_data;
+    struct GDT_segment user_32_code; // Reserved, not yet implemented
     struct GDT_segment user_64_data;
     struct GDT_segment user_64_code;
     struct GDT_TSS_entry tss;
 };
+
+_Static_assert(offsetof(struct GDT, kernel_code) == GDT_KERNEL_CODE);
+_Static_assert(offsetof(struct GDT, kernel_data) == GDT_KERNEL_DATA);
+_Static_assert(offsetof(struct GDT, user_64_data)+3 == GDT_USER_DATA);
+_Static_assert(offsetof(struct GDT, user_64_code)+3 == GDT_USER64_CODE);
 
 struct TSS {
     u32 _res0;
@@ -122,8 +129,8 @@ lgdt(const struct GDT* gdt)
     struct ldt_operand lgdt = {
         sizeof(*gdt)-1, gdt
     };
-    u16 cs = offsetof(struct GDT, kernel_code);
-    u16 ss = offsetof(struct GDT, kernel_data);
+    u16 cs = GDT_KERNEL_CODE;
+    u16 ss = GDT_KERNEL_DATA;
     u16 ds = 0;
 
     /* This inline asm uses push/retfq to change the CS register.
@@ -181,7 +188,7 @@ x86_64_load_early_descriptors()
         idt.entries[i] = (struct IDT_entry){
             .gate_type = GATE_INTERRUPT,
             .present = 1,
-            .selector = offsetof(struct GDT, kernel_code),
+            .selector = GDT_KERNEL_CODE,
             .offset_15_0 = isr_location,
             .offset_31_16 = isr_location >> 16,
             .offset_63_32 = isr_location >> 32,
@@ -205,10 +212,12 @@ enable_syscall()
             u16 sysret_selector;
         };
     } star_msr_contents = {
-        .syscall_selector = offsetof(struct GDT, kernel_code),
-        .sysret_selector = offsetof(struct GDT, user_64_code) + 3 - 16,
+        .syscall_selector = GDT_KERNEL_CODE,
+        .sysret_selector = GDT_USER64_CODE - 16,
     };
     wrmsr(MSR_STAR, star_msr_contents.value);
+
+    wrmsr(MSR_EFER, MSR_EFER_SCE | rdmsr(MSR_EFER));
 }
 
 void

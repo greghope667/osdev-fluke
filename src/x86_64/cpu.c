@@ -2,6 +2,12 @@
 #include "mem/alloc.h"
 #include "msr.h"
 #include "klib.h"
+#include "gdt.h"
+#include "user/process.h"
+#include "mmu.h"
+
+_Static_assert(offsetof(struct Cpu, kernel_stack) == CPU_OFFSET_KERNEL_SP);
+_Static_assert(offsetof(struct Cpu, user_stack) == CPU_OFFSET_USER_SP);
 
 struct Cpu* (*cpu_array)[];
 int cpu_count;
@@ -45,4 +51,47 @@ x86_64_cpu_create_tls(u8 lapic_id, usize kernel_stack)
     wrmsr(MSR_GS_BASE, (usize)cpu);
 
     push_cpu(cpu);
+}
+
+void
+cpu_context_initialise_user(struct Context* context, usize code, usize stack)
+{
+    *context = (struct Context) {
+        .cs = GDT_USER64_CODE,
+        .ss = GDT_USER_DATA,
+        .rflags = 0x3202, // IOPL=3, IF set
+        .rip = code,
+        .rsp = stack,
+    };
+}
+
+void
+cpu_context_save()
+{
+    struct Process* process = this_cpu->process;
+    struct Context* context = this_cpu->user_context;
+
+    assert(context->cs == GDT_USER64_CODE);
+    assert(process->state == RUNNING);
+
+    process->saved_context = *context;
+    process->state = FLOATING;
+}
+
+extern void exit_to_user_asm(struct Context* context) __attribute__((noreturn));
+
+void
+cpu_context_restore_and_exit(struct Process* process)
+{
+    assert(!this_cpu->process);
+    assert(process->state == FLOATING);
+    assert(process->saved_context.cs == GDT_USER64_CODE);
+
+    wrmsr(MSR_KERNEL_GS_BASE, 0);
+    wrmsr(MSR_FS_BASE, 0);
+    mmu_set_address_space(process->vm.page_map);
+
+    this_cpu->process = process;
+    process->state = RUNNING;
+    exit_to_user_asm(&process->saved_context);
 }

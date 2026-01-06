@@ -55,7 +55,7 @@ build/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -MMD -MF build/$*.d -o $@
 
 build/%.o: %.s
-	$(CC) $(ASMFLAGS) -c $< -o $@
+	$(CC) -x assembler-with-cpp $(ASMFLAGS) -c $< -o $@
 
 bin/os.elf: $(OBJS) src/linker.ld
 	$(CC) $(CFLAGS) $(OBJS) -T src/linker.ld -o $@

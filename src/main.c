@@ -8,8 +8,9 @@
 #include "bootloader.h"
 #include "symbols.h"
 
+#include "user/process.h"
+#include "user/schedule.h"
 #include "x86_64/cpu.h"
-#include "x86_64/mmu.h"
 #include "x86_64/time.h"
 #include "x86_64/descriptors.h"
 #include "x86_64/cpu.h"
@@ -21,18 +22,6 @@ const char* lines[] = {
     "1 : x if 2 else 3 then ; false x true x",
     ": x 0 3 - begin dup while dup . 1+ repeat drop ; x",
 };
-
-static int runcode(const char* code, int length) {
-    auto p = mmu_get_address_space();
-    auto x = mmu_create_address_space();
-    mmu_set_address_space(x);
-    mmu_assign(x, 0x20000, ROUND_UP_P2(length, PAGE_SIZE), MMU_MODE_EXEC|MMU_MODE_WRITE, MMU_CACHE_DEFAULT);
-    memcpy((void*)0x20000, code, length);
-    int r = ((int(*)(void))0x20000)(); // <-- Scariest line of C ever
-    mmu_set_address_space(p);
-    mmu_destroy_address_space(x);
-    return r;
-}
 
 void entry(void* stack) {
     symbol_table_init();
@@ -96,11 +85,14 @@ void entry(void* stack) {
     alloc_print_info();
     pmm_print_info();
 
-    printf("%i\n", runcode("\xB8\x0C\x00\x00\x00\xC3", 6));
-    pmm_print_info();
-    runcode("\xC7\x04\x25\x34\x12\x00\x00\x07\x00\x00\x00", 10);
+    static const char program[] =
+        "\x90\x0f\x05"
+        "\x90\xB8\x01\x00\x00\x00\xFF\xC2\xC7\x04\x25\x34\x12\x00\x00\x0C\x00\x00\x00";
 
-    printf("entry @ %zx\n", virt_to_phys(mmu_get_address_space(), &entry).address);
+    auto proc = process_create();
+    process_load_flat_binary(proc, program, sizeof(program));
+    schedule_ready(proc);
+    schedule();
 
     panic("reached end of main");
 }

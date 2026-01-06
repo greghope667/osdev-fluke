@@ -4,3 +4,5 @@ build
 bin
 isodir
 log.txt
+
+**/limine.h

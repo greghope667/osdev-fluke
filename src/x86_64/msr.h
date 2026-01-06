@@ -4,7 +4,7 @@
 
 enum MSR : u32 {
     MSR_APIC_BASE                       = 0x0000'001b,
-    MSR_EXTENDED_FEATURE_ENABLES        = 0xc000'0080,
+    MSR_EFER                            = 0xc000'0080,
     MSR_STAR                            = 0xc000'0081,
     MSR_LSTAR                           = 0xc000'0082,
     MSR_CSTAR                           = 0xc000'0083,
@@ -13,6 +13,8 @@ enum MSR : u32 {
     MSR_GS_BASE                         = 0xc000'0101,
     MSR_KERNEL_GS_BASE                  = 0xc000'0102,
 };
+
+#define MSR_EFER_SCE (1 << 0)
 
 inline u64
 rdmsr(enum MSR reg)

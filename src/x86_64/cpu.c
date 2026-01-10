@@ -78,7 +78,7 @@ cpu_context_save()
     process->state = FLOATING;
 }
 
-extern void exit_to_user_asm(struct Context* context) __attribute__((noreturn));
+extern void exit_kernel_asm(struct Context* context) __attribute__((noreturn));
 
 void
 cpu_context_restore_and_exit(struct Process* process)
@@ -93,5 +93,25 @@ cpu_context_restore_and_exit(struct Process* process)
 
     this_cpu->process = process;
     process->state = RUNNING;
-    exit_to_user_asm(&process->saved_context);
+    exit_kernel_asm(&process->saved_context);
+}
+
+static void idle()
+{
+    for (;;)
+        asm("hlt");
+}
+
+void
+cpu_exit_idle()
+{
+    assert(!this_cpu->process);
+    struct Context context = {
+        .cs = GDT_KERNEL_CODE,
+        .ss = GDT_KERNEL_DATA,
+        .rflags = 0x202, // IF set
+        .rip = (usize)&idle,
+        .rsp = this_cpu->kernel_stack,
+    };
+    exit_kernel_asm(&context);
 }

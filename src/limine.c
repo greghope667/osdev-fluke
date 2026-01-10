@@ -18,6 +18,14 @@ hhdm: offset
 stacks: ???
 */
 
+const volatile LIMINE_BASE_REVISION(1);
+
+const volatile struct limine_bootloader_info_request
+limine_bootloader_info_request = {
+    .id = LIMINE_BOOTLOADER_INFO_REQUEST,
+    .revision = 0,
+};
+
 const volatile struct limine_framebuffer_request
 limine_framebuffer_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
@@ -60,6 +68,15 @@ bootloader_init_display()
 void
 bootloader_run_setup()
 {
+    {
+        auto response = limine_bootloader_info_request.response;
+        if (!response)
+            panic("no bootloader info response");
+        klog("bootloader_run_setup: %s %s\n", response->name, response->version);
+    }
+
+    klog("bootloader_run_setup: limine base revision %zu\n", limine_base_revision[2]);
+
     {
         auto response = limine_hhdm_request.response;
         if (!response)

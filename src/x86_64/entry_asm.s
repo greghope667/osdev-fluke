@@ -10,7 +10,7 @@
         # Exports
         .global isr_stubs_loc_asm
         .global syscall_entry_asm
-        .global exit_to_user_asm
+        .global exit_kernel_asm
 
 /* Stack layout on calling into C handler
  * A pointer to this structure is passed to C
@@ -103,7 +103,7 @@ irq_common:
         popall
         add     rsp, 16                                 # Pop ISR num and error code
 
-        cmp     word ptr [rsp + 24], GDT_KERNEL_CODE    # If leaving to kernel
+        cmp     word ptr [rsp + 8], GDT_KERNEL_CODE     # If leaving to kernel
         je      2f                                      # Skip loading user GS
         swapgs
 2:      iretq
@@ -222,10 +222,12 @@ syscall_entry_asm:
         sysretq
 
 
-        .type exit_to_user_asm, @function
-exit_to_user_asm:
+        .type exit_kernel_asm, @function
+exit_kernel_asm:
         mov     rsp, rdi                                # ISR Context structure
         popall
         add     rsp, 16                                 # Pop ISR num and error code
+        cmp     word ptr [rsp + 8], GDT_KERNEL_CODE     # If leaving to kernel
+        je      1f                                      # Skip loading user GS
         swapgs
-        iretq
+1:      iretq

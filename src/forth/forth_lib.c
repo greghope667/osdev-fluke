@@ -132,7 +132,7 @@ extern struct Forth_body _interpret;
 int
 forth_interpret(const char* text, isize chars, isize stack[])
 {
-    static u8 interpret_data_space[4096];
+    u8 interpret_data_space[4096];
     static const Forth_xt program[2] = { &_interpret, &_exitforth };
     memset(interpret_data_space, 0, sizeof(interpret_data_space));
 
@@ -149,7 +149,7 @@ forth_interpret(const char* text, isize chars, isize stack[])
     stack_usage = forth_exec(&ctx, program, stack, stack_usage);
 
     if (stack_usage < 0) {
-        puts("aborted");
+        klog("forth_interpret: aborted (%zi)\n", stack_usage);
         return -1;
     } else {
         return forth_print_stack(&ctx, stack, stack_usage);

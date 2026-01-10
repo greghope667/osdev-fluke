@@ -261,3 +261,43 @@ mmu_clear(
     validate_limits(address, len);
     clear(phys_to_virt(pm.top_address), PML4, address, address + len);
 }
+
+void
+mmu_point1(
+    struct Page_map pm,
+    usize address,
+    physical_t target,
+    enum mmu_mode mode,
+    enum mmu_cache cache
+) {
+    static const table_entry_t PS_BIT = 1 << 7;
+
+    struct Translation_table* table;
+    table_entry_t* entry;
+
+    table = phys_to_virt(pm.top_address);
+    entry = &table->entries[table_index(PML4, address)];
+    if (!(*entry & PRESENT))
+        *entry = entry_address_bits(mmu_alloc_page()) | INTERMEDIATE;
+
+    table = phys_to_virt((physical_t){ *entry & TABLE_ENTRY_ADDRESS_MASK });
+    entry = &table->entries[table_index(PDPT, address)];
+    if (!(*entry & PRESENT))
+        *entry = entry_address_bits(mmu_alloc_page()) | INTERMEDIATE;
+    else if (*entry & PS_BIT)
+        panic("mmu_point1: address already mapped");
+
+    table = phys_to_virt((physical_t){ *entry & TABLE_ENTRY_ADDRESS_MASK });
+    entry = &table->entries[table_index(PDT, address)];
+    if (!(*entry & PRESENT))
+        *entry = entry_address_bits(mmu_alloc_page()) | INTERMEDIATE;
+    else if (*entry & PS_BIT)
+        panic("mmu_point1: address already mapped");
+
+    table = phys_to_virt((physical_t){ *entry & TABLE_ENTRY_ADDRESS_MASK });
+    entry = &table->entries[table_index(PT, address)];
+    if (*entry & PRESENT)
+        panic("mmu_point1: address already mapped");
+
+    *entry = (target.address & TABLE_ENTRY_ADDRESS_MASK) | entry_flags(cache, mode);
+}

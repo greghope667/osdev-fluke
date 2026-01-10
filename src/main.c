@@ -1,6 +1,3 @@
-#include "mem/alloc.h"
-#include "mem/pmm.h"
-
 #include "print/dest.h"
 #include "print/serial.h"
 
@@ -10,6 +7,7 @@
 
 #include "user/process.h"
 #include "user/schedule.h"
+#include "x86_64/apic.h"
 #include "x86_64/cpu.h"
 #include "x86_64/time.h"
 #include "x86_64/descriptors.h"
@@ -17,11 +15,8 @@
 
 #include "forth/forth.h"
 
-const char* lines[] = {
-    "1 2 3 swap",
-    "1 : x if 2 else 3 then ; false x true x",
-    ": x 0 3 - begin dup while dup . 1+ repeat drop ; x",
-};
+extern const char pid0_code[];
+extern const usize pid0_size;
 
 void entry(void* stack) {
     symbol_table_init();
@@ -41,38 +36,18 @@ void entry(void* stack) {
     klog("entry: boot stack %p\n", stack);
 
     {
-        puts("~~~ Symbols ~~~");
         int local = 0, global = 0;
-        for (const struct Symbol* s = symbol_list; s; s = s->next) {
-            if (isupper(s->type)) {
-                //printf("%p\t%c\t%s\n", s->address, s->type, s->name);
-                printf("%s ", s->name);
-                global++;
-            } else {
-                local++;
-            }
-        }
-        putchar('\n');
+        for (const struct Symbol* s = symbol_list; s; s = s->next)
+            isupper(s->type) ? global++ : local++;
         klog("entry: total symbols: global %i local %i\n", global, local);
     }
 
     forth_init();
-
     {
         int words = 0;
-        puts("\n~~~ Forth Words ~~~");
-        for (const struct Forth_header* f = forth_headers; f; f = f->next) {
-            //printf("%p\t%p\t%i\t%i\t%s\n", f, forth_header_to_xt(f), f->immediate, f->name_length, f->name);
-            printf("%s ", f->name);
+        for (const struct Forth_header* f = forth_headers; f; f = f->next)
             words++;
-        }
-        putchar('\n');
         klog("entry: total forth words: %i\n", words);
-    }
-
-    static isize fstack[16];
-    for (int i=0; i<ARRAY_LENGTH(lines); i++) {
-        forth_interpret(lines[i], strlen(lines[i]), fstack+1);
     }
 
     x86_64_load_early_descriptors();
@@ -82,17 +57,18 @@ void entry(void* stack) {
     x86_64_load_descriptors((usize)stack);
     x86_64_cpu_create_tls(0, (usize)stack);
 
-    alloc_print_info();
-    pmm_print_info();
+    x86_64_apic_initialise();
+    x86_64_ioapic_initialise();
 
-    static const char program[] =
-        "\x90\x0f\x05"
-        "\x90\xB8\x01\x00\x00\x00\xFF\xC2\xC7\x04\x25\x34\x12\x00\x00\x0C\x00\x00\x00";
+    // alloc_print_info();
+    // pmm_print_info();
 
     auto proc = process_create();
-    process_load_flat_binary(proc, program, sizeof(program));
+    process_load_flat_binary(proc, pid0_code, pid0_size);
     schedule_ready(proc);
     schedule();
+    // x86_64_apic_set_tickrate(1);
+    // cpu_exit_idle();
 
     panic("reached end of main");
 }

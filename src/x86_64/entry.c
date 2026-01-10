@@ -1,29 +1,9 @@
 #include "print/console.h"
 #include "klib.h"
-
-struct Context {
-    usize registers[15];
-    usize isrno;
-    usize error_code;
-    usize rip;
-    usize cs;
-    usize rflags;
-    usize rsp;
-    usize ss;
-};
-
+#include "user/syscall.h"
+#include "x86_64/apic.h"
+#include "cpu.h"
 #include "symbols.h"
-static const struct Symbol*
-symbol_of_address(void* address)
-{
-    const struct Symbol* match = 0;
-    for (const struct Symbol* s = symbol_list; s; s = s->next) {
-        if (s->address >= address)
-            break;
-        match = s;
-    }
-    return match;
-}
 
 static void
 print_registers(struct Context* ctx)
@@ -39,19 +19,19 @@ print_registers(struct Context* ctx)
     }
     printf(
         "    RAX %016zx  RBX %016zx  RCX %016zx  RDX %016zx\n",
-        ctx->registers[0], ctx->registers[1], ctx->registers[2], ctx->registers[3]
+        ctx->rax, ctx->rbx, ctx->rcx, ctx->rdx
     );
     printf(
         "    RSI %016zx  RDI %016zx  RBP %016zx  RSP %016zx\n",
-        ctx->registers[4], ctx->registers[5], ctx->registers[6], ctx->rsp
+        ctx->rsi, ctx->rdi, ctx->rbp, ctx->rsp
     );
     printf(
         "    R8  %016zx  R9  %016zx  R10 %016zx  R11 %016zx\n",
-        ctx->registers[7], ctx->registers[8], ctx->registers[9], ctx->registers[10]
+        ctx->r8 , ctx->r9 , ctx->r10, ctx->r11
     );
     printf(
         "    R12 %016zx  R13 %016zx  R14 %016zx  R15 %016zx\n",
-        ctx->registers[11], ctx->registers[12], ctx->registers[13], ctx->registers[14]
+        ctx->r12, ctx->r13, ctx->r14, ctx->r15
     );
 }
 
@@ -66,7 +46,7 @@ exception_kernel_entry(u8 exception, struct Context* ctx)
         printf("Page fault address: %zx\n", cr2);
     }
     print_registers(ctx);
-    show_backtrace((void*)ctx->registers[6]);
+    show_backtrace((void*)ctx->rbp);
     panic("Unhandled kernel exception");
 }
 
@@ -89,13 +69,19 @@ interrupt_entry(u8 interrupt, struct Context* ctx)
 {
     klog("Interrupt %u  cs %zu  ss %zu:\n", interrupt, ctx->cs, ctx->ss);
     print_registers(ctx);
-    panic("Unhandled interrupt");
+    if (interrupt < 254)
+        panic("Unhandled interrupt");
+    x86_64_apic_send_eoi();
 }
 
 void
 syscall_entry(struct Context* ctx)
 {
-    klog("Syscall\n");
+    klog("Syscall %zx: (%zx, %zx, %zx, %zx, %zx, %zx)\n",
+        CTX_SYS_OP(ctx),
+        CTX_SYS_A0(ctx), CTX_SYS_A1(ctx), CTX_SYS_A2(ctx),
+        CTX_SYS_A3(ctx), CTX_SYS_A4(ctx), CTX_SYS_A5(ctx)
+    );
     print_registers(ctx);
-    // panic("Unhandled syscall");
+    CTX_SYS_R0(ctx) = syscall(ctx);
 }

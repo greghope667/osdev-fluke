@@ -19,3 +19,4 @@ void symbol_table_init();
 
 const struct Symbol* ksym_s(const char*);
 const struct Symbol* ksym_n(const char*, isize);
+const struct Symbol* symbol_of_address(void* address);

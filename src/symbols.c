@@ -59,3 +59,15 @@ ksym_n(const char* name, isize len)
     }
     return nullptr;
 }
+
+const struct Symbol*
+symbol_of_address(void* address)
+{
+    const struct Symbol* match = 0;
+    for (const struct Symbol* s = symbol_list; s; s = s->next) {
+        if (s->address >= address)
+            break;
+        match = s;
+    }
+    return match;
+}

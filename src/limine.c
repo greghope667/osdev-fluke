@@ -18,29 +18,29 @@ hhdm: offset
 stacks: ???
 */
 
-const volatile LIMINE_BASE_REVISION(1);
+const volatile u64 limine_base_revision[] = LIMINE_BASE_REVISION(1);
 
 const volatile struct limine_bootloader_info_request
 limine_bootloader_info_request = {
-    .id = LIMINE_BOOTLOADER_INFO_REQUEST,
+    .id = LIMINE_BOOTLOADER_INFO_REQUEST_ID,
     .revision = 0,
 };
 
 const volatile struct limine_framebuffer_request
 limine_framebuffer_request = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST,
+    .id = LIMINE_FRAMEBUFFER_REQUEST_ID,
     .revision = 1,
 };
 
 const volatile struct limine_hhdm_request
 limine_hhdm_request = {
-    .id = LIMINE_HHDM_REQUEST,
+    .id = LIMINE_HHDM_REQUEST_ID,
     .revision = 0,
 };
 
 const volatile struct limine_memmap_request
 limine_memmap_request = {
-    .id = LIMINE_MEMMAP_REQUEST,
+    .id = LIMINE_MEMMAP_REQUEST_ID,
     .revision = 0,
 };
 
@@ -96,7 +96,7 @@ bootloader_run_setup()
             [LIMINE_MEMMAP_ACPI_NVS] = "acpi nvs",
             [LIMINE_MEMMAP_BAD_MEMORY] = "bad memory",
             [LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE] = "bootloader reclaimable",
-            [LIMINE_MEMMAP_KERNEL_AND_MODULES] = "kernel and modules",
+            [LIMINE_MEMMAP_EXECUTABLE_AND_MODULES] = "kernel and modules",
             [LIMINE_MEMMAP_FRAMEBUFFER] = "framebuffer",
         };
 

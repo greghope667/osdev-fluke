@@ -1,6 +1,7 @@
 #include "syscall.h"
 #include "fluke.h"
 #include "forth/forth.h"
+#include "schedule.h"
 
 usize
 syscall(Context ctx)
@@ -17,6 +18,15 @@ syscall(Context ctx)
             } else {
                 return -EIO;
             }
+
+        case SYSCALL_nsleep:
+            isize duration = CTX_SYS_A0(ctx);
+            if (duration <= 0)
+                return -EINVAL;
+
+            CTX_SYS_R0(ctx) = 0;
+            schedule_nanosleep(cpu_context_save(), duration);
+            schedule_or_exit();
 
         default:
             return -ENOSYS;

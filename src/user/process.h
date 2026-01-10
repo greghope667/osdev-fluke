@@ -11,6 +11,7 @@ enum process_state {
     RUNNING,
     READY,
     WAITING,
+    SLEEPING,
 };
 
 struct Process {
@@ -18,7 +19,11 @@ struct Process {
     struct Context saved_context;
     struct Queue_node queue;
     enum process_state state;
-    struct Queue_node timeout;
+
+    struct Process** timeout_prev;
+    struct Process* timeout_next;
+    u64 timeout_ns;
+
     struct Tree descriptors;
 };
 

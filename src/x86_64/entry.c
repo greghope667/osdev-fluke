@@ -1,5 +1,6 @@
 #include "print/console.h"
 #include "klib.h"
+#include "user/schedule.h"
 #include "user/syscall.h"
 #include "x86_64/apic.h"
 #include "cpu.h"
@@ -72,6 +73,8 @@ interrupt_entry(u8 interrupt, struct Context* ctx)
     if (interrupt < 254)
         panic("Unhandled interrupt");
     x86_64_apic_send_eoi();
+    this_cpu->user_context = ctx;
+    schedule();
 }
 
 void
@@ -83,5 +86,9 @@ syscall_entry(struct Context* ctx)
         CTX_SYS_A3(ctx), CTX_SYS_A4(ctx), CTX_SYS_A5(ctx)
     );
     print_registers(ctx);
+    this_cpu->user_context = ctx;
     CTX_SYS_R0(ctx) = syscall(ctx);
+
+    // If thread has been scheduled away, syscall() should not return
+    assert(this_cpu->process != nullptr);
 }

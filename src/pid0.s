@@ -26,13 +26,15 @@ pid0_code:
         mov     r15d, 15
         syscall
 
-        mov     eax, SYSCALL_forth_interpret
+1:      mov     eax, SYSCALL_forth_interpret
         lea     rdi, [forth_code]
         mov     rsi, forth_code_end - forth_code
         syscall
 
-        mov     eax, SYSCALL_forth_interpret
+        mov     eax, SYSCALL_nsleep
+        mov     edi, 1500000000
         syscall
+        jmp     1b
 
         nop
         mov     qword ptr [0x12345678], 1

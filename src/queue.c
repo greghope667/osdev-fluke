@@ -13,7 +13,9 @@ queue_pop(struct Queue* queue)
     assert(node->root == queue);
 
     queue->head = node->next;
-    if (queue->tail == node)
+    if (node->next)
+        node->next->prev = nullptr;
+    else
         queue->tail = nullptr;
 
     return memset(node, 0, sizeof(*node));
@@ -30,9 +32,11 @@ queue_push(struct Queue* queue, struct Queue_node* node)
         .next = nullptr,
     };
 
-    queue->tail = node;
-    if (!queue->head)
+    if (queue->tail)
+        queue->tail->next = node;
+    else
         queue->head = node;
+    queue->tail = node;
 }
 
 void

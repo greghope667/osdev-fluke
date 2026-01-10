@@ -63,11 +63,13 @@ void entry(void* stack) {
     // alloc_print_info();
     // pmm_print_info();
 
-    auto proc = process_create();
-    process_load_flat_binary(proc, pid0_code, pid0_size);
-    schedule_ready(proc);
+    for (int i=0; i<2; i++) {
+        auto proc = process_create();
+        process_load_flat_binary(proc, pid0_code, pid0_size);
+        schedule_ready(proc);
+    }
+    x86_64_apic_set_tickrate(1);
     schedule();
-    // x86_64_apic_set_tickrate(1);
     // cpu_exit_idle();
 
     panic("reached end of main");

@@ -88,7 +88,7 @@ exn_common:
 
         .type isr_common, @function
 irq_common:
-        cmp     word ptr [rsp + 24], GDT_KERNEL_CODE    # If entry from kernel
+        cmp     word ptr [rsp + 16], GDT_KERNEL_CODE    # If entry from kernel
         je      1f                                      # Skip loading kernel GS
         swapgs
 

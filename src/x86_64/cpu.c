@@ -65,7 +65,7 @@ cpu_context_initialise_user(struct Context* context, usize code, usize stack)
     };
 }
 
-void
+struct Process*
 cpu_context_save()
 {
     struct Process* process = this_cpu->process;
@@ -76,6 +76,9 @@ cpu_context_save()
 
     process->saved_context = *context;
     process->state = FLOATING;
+
+    this_cpu->process = nullptr;
+    return process;
 }
 
 extern void exit_kernel_asm(struct Context* context) __attribute__((noreturn));

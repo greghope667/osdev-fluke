@@ -36,8 +36,8 @@ typedef struct Context* Context;
 
 struct Process;
 
-void cpu_context_initialise_user(struct Context* context, usize code, usize stack);
-void cpu_context_save();
+void cpu_context_initialise_user(Context context, usize code, usize stack);
+struct Process* cpu_context_save();
 void cpu_context_restore_and_exit(struct Process* process) __attribute__((noreturn));
 void cpu_exit_idle() __attribute__((noreturn));
 

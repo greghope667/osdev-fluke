@@ -23,6 +23,8 @@ typedef __int128_t i128;
 typedef ptrdiff_t isize;
 typedef size_t usize;
 
+#define ISIZE_MAX PTRDIFF_MAX
+
 #define EOF (-1)
 
 #define ARRAY_LENGTH(x) ((isize)((sizeof(x))/(sizeof(x[0]))))

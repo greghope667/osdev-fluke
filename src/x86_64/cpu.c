@@ -2,7 +2,7 @@
 #include "mem/alloc.h"
 #include "msr.h"
 #include "klib.h"
-#include "gdt.h"
+#include "offsets.h"
 #include "user/process.h"
 #include "mmu.h"
 

@@ -2,13 +2,11 @@
 
 #include "kdef.h"
 
-#include "tree.h"
-
 struct Handle_vtbl;
 
 struct Handle {
     const struct Handle_vtbl* vtbl;
-    struct Tree_node descriptors_node;
+    isize refcount;
     // ...
 };
 
@@ -17,3 +15,5 @@ struct Handle_vtbl {
     isize (*write)(struct Handle*, const void* data, isize len);
     isize (*read)(struct Handle*, void* data, isize len);
 };
+
+void handle_release(struct Handle*);

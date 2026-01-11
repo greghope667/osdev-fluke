@@ -33,12 +33,30 @@ pid0_code:
 
         mov     eax, SYSCALL_nsleep
         mov     edi, 1500000000
+        // syscall
+
+        mov     eax, SYSCALL_open_module
+        lea     rdi, [rip + .Lmodule_name]
+        mov     esi, .Lmodule_name_end - .Lmodule_name
         syscall
-        jmp     1b
+        mov     ebx, eax
+
+        mov     eax, SYSCALL_read
+        mov     edi, ebx
+        lea     rsi, [rsp - 16]
+        mov     edx, 16
+        syscall
+
+        mov     r8, [rsp - 16]
+        mov     r9, [rsp - 8]
 
         nop
         mov     qword ptr [0x12345678], 1
         hlt
+
+.Lmodule_name:
+        .ascii  "/boot/limine/limine.conf"
+.Lmodule_name_end:
 
         .balign 8
 pid0_size:

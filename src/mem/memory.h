@@ -19,10 +19,10 @@ hhdm_virt_to_phys(void* v) { return (physical_t){ (usize)v - hhdm_offset }; }
 #define PAGE_SIZE 0x1000
 
 inline bool
-is_user_pointer(void* v) { return (usize)v < MEM_LOW_HALF_MAX; }
+is_user_pointer(const void* v) { return (usize)v < MEM_LOW_HALF_MAX; }
 
 inline bool
-is_kernel_pointer(void* v) { return (usize)v >= MEM_HIGH_HALF_MIN; }
+is_kernel_pointer(const void* v) { return (usize)v >= MEM_HIGH_HALF_MIN; }
 
 inline bool
 is_page_aligned(usize a) { return (a & (PAGE_SIZE-1)) == 0; }

@@ -63,11 +63,11 @@ void entry(void* stack) {
     // alloc_print_info();
     // pmm_print_info();
 
-    for (int i=0; i<2; i++) {
+    // for (int i=0; i<2; i++) {
         auto proc = process_create();
         process_load_flat_binary(proc, pid0_code, pid0_size);
         schedule_ready(proc);
-    }
+    // }
     x86_64_apic_set_tickrate(1);
     schedule();
     // cpu_exit_idle();

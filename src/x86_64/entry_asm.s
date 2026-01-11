@@ -1,5 +1,5 @@
 .intel_syntax noprefix
-#include "gdt.h"
+#include "offsets.h"
 
         # Imports
         .global exception_kernel_entry

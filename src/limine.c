@@ -1,8 +1,11 @@
 #include "bootloader.h"
+#include "mem/alloc.h"
 #include "print/console.h"
 #include "klib.h"
 #include "mem/memory.h"
 #include "mem/pmm.h"
+#include "errno.h"
+#include "user/handle.h"
 
 #include <limine.h>
 
@@ -41,6 +44,12 @@ limine_hhdm_request = {
 const volatile struct limine_memmap_request
 limine_memmap_request = {
     .id = LIMINE_MEMMAP_REQUEST_ID,
+    .revision = 0,
+};
+
+const volatile struct limine_module_request
+limine_module_request = {
+    .id = LIMINE_MODULE_REQUEST_ID,
     .revision = 0,
 };
 
@@ -111,5 +120,86 @@ bootloader_run_setup()
         }
         pmm_print_info();
     }
-    //*(int*)0x12'3456'7890 = 0x1234;
+
+    {
+        auto response = limine_module_request.response;
+        if (!response)
+            panic("no module response");
+
+        klog("bootloader_run_setup: modules:\n");
+        klog("    Address             Size                Path\n");
+
+        usize count = response->module_count;
+        for (usize i=0; i<count; i++) {
+            auto module = response->modules[i];
+            klog(
+                "    %p    %016zx    %s    %s\n",
+                module->address, module->size, module->path, module->string
+            );
+        }
+    }
+}
+
+// Kernel modules
+// (most of this implementation should probably be elsewhere)
+
+struct Module_handle {
+    struct Handle handle;
+    void* address;
+    isize size;
+    isize offset;
+};
+
+static void
+module_destruct(struct Handle* h)
+{
+    kfree(h, sizeof(struct Module_handle));
+}
+
+static isize
+module_read(struct Handle* h, void* dest, isize len)
+{
+    assert(len > 0);
+    auto module = container_of(h, struct Module_handle, handle);
+    isize bytes = MIN(len, module->size - module->offset);
+    if (!copy_to_user(dest, module->address + module->offset, bytes))
+        return -1;
+    module->offset += bytes;
+    return bytes;
+}
+
+const struct Handle_vtbl module_vtable = {
+    .destruct = module_destruct,
+    .read = module_read,
+};
+
+struct Handle*
+bootloader_open_module(const char* path, usize path_len)
+{
+    auto modules = limine_module_request.response;
+    usize count = modules->module_count;
+    for (usize i=0; i<count; i++) {
+        auto module = modules->modules[i];
+        usize len = strlen(module->path);
+
+        if (path_len == len && memcmp(path, module->path, len) == 0) {
+            if (module->size > ISIZE_MAX)
+                panic("kernel module too large");
+
+            struct Module_handle* handle = kalloc(sizeof(*handle));
+            if (!handle)
+                return nullptr;
+
+            *handle = (struct Module_handle) {
+                .handle  = { .vtbl = &module_vtable },
+                .address = module->address,
+                .size    = module->size,
+                .offset  = 0,
+            };
+            return &handle->handle;
+        }
+    }
+
+    errno = ENOENT;
+    return nullptr;
 }

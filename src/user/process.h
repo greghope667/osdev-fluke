@@ -3,7 +3,7 @@
 #include "mem/vm.h"
 #include "x86_64/cpu.h"
 #include "queue.h"
-#include "tree.h"
+#include "descriptor.h"
 
 enum process_state {
     SPAWNING,
@@ -13,6 +13,7 @@ enum process_state {
     WAITING,
     SLEEPING,
 };
+
 
 struct Process {
     struct VM vm;
@@ -24,7 +25,7 @@ struct Process {
     struct Process* timeout_next;
     u64 timeout_ns;
 
-    struct Tree descriptors;
+    struct Descriptor_table descriptors;
 };
 
 struct Process* process_create();

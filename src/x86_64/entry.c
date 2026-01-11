@@ -87,7 +87,9 @@ syscall_entry(struct Context* ctx)
     );
     print_registers(ctx);
     this_cpu->user_context = ctx;
+    this_cpu->error = 0;
     CTX_SYS_R0(ctx) = syscall(ctx);
+    klog("Syscall response: %zx\n", CTX_SYS_R0(ctx));
 
     // If thread has been scheduled away, syscall() should not return
     assert(this_cpu->process != nullptr);

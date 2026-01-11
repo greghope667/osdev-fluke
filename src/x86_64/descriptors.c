@@ -2,7 +2,7 @@
 #include "klib.h"
 #include "mem/alloc.h"
 #include "msr.h"
-#include "gdt.h"
+#include "offsets.h"
 
 /* Access byte bits for code/data segments:
  * 0   Accessed - we don't care about this

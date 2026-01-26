@@ -5,7 +5,6 @@
 #include "bootloader.h"
 #include "symbols.h"
 
-#include "user/process.h"
 #include "user/schedule.h"
 #include "x86_64/apic.h"
 #include "x86_64/cpu.h"
@@ -60,17 +59,10 @@ void entry(void* stack) {
     x86_64_apic_initialise();
     x86_64_ioapic_initialise();
 
-    // alloc_print_info();
-    // pmm_print_info();
+    bootloader_run_init_modules();
 
-    // for (int i=0; i<2; i++) {
-        auto proc = process_create();
-        process_load_flat_binary(proc, pid0_code, pid0_size);
-        schedule_ready(proc);
-    // }
     x86_64_apic_set_tickrate(1);
     schedule();
-    // cpu_exit_idle();
 
     panic("reached end of main");
 }

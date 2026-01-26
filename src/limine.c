@@ -6,6 +6,8 @@
 #include "mem/pmm.h"
 #include "errno.h"
 #include "user/handle.h"
+#include "user/process.h"
+#include "user/schedule.h"
 
 #include <limine.h>
 
@@ -136,6 +138,22 @@ bootloader_run_setup()
                 "    %p    %016zx    %s    %s\n",
                 module->address, module->size, module->path, module->string
             );
+        }
+    }
+}
+
+void
+bootloader_run_init_modules()
+{
+    auto response = limine_module_request.response;
+    usize count = response->module_count;
+    for (usize i=0; i<count; i++) {
+        auto module = response->modules[i];
+        if (memcmp(module->string, "init", 4) == 0) {
+            klog("bootloader_run_init_modules: loading %s\n", module->path);
+            auto proc = process_create();
+            process_load_init_elf(proc, module->address);
+            schedule_ready(proc);
         }
     }
 }

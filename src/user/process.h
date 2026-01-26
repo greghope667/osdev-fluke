@@ -30,3 +30,4 @@ struct Process {
 
 struct Process* process_create();
 void process_load_flat_binary(struct Process* process, const void* binary, usize size);
+void process_load_init_elf(struct Process* process, const void* elf);

@@ -64,10 +64,14 @@ bin/os.elf: $(OBJS) src/linker.ld
 	objcopy --update-section .symbols=bin/symbols bin/os.elf
 	size $(OBJS) $@
 
+isodir/boot/init: programs/init.c src/fluke.h
+	$(CC) $(CFLAGS) $< -o $@
+
 ### ISO build
 
 ISOFILES = \
 	isodir/boot/os.elf \
+	isodir/boot/init \
 	isodir/boot/limine/limine.conf \
 	isodir/boot/limine/limine-bios.sys \
 	isodir/boot/limine/limine-uefi-cd.bin \

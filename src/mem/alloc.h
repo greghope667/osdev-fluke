@@ -1,10 +1,15 @@
 #pragma once
 
 #include "kdef.h"
+#include "fluke.h"
 
 #define ALLOC_MAX PAGE_SIZE
 
-inline int __attribute__((const))
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+CXX_CONSTEXPR inline int __attribute__((const))
 alloc_calc_size_class(usize allocation)
 {
     if (allocation < 8) return 0;
@@ -38,3 +43,13 @@ void alloc_print_info();
     if (!ptr) panic("allocation failure");                           \
     ptr;                                                             \
 })
+
+#define TRY_ALLOC(expr) ({                  \
+    auto* __p = (expr);                     \
+    if (! __p) return error_code(ENOMEM);   \
+    __p;                                    \
+})
+
+#ifdef __cplusplus
+} // extern C
+#endif

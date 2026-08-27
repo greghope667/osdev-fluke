@@ -1,9 +1,12 @@
 #pragma once
 
 #include "kdef.h"
-#include "tls.h"
 
-struct Context {
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct Registers {
     union {
         usize registers[15];
         struct {
@@ -22,7 +25,23 @@ struct Context {
     usize ss;
 };
 
-typedef struct Context* Context;
+typedef struct Registers* Context;
+
+enum thread_state {
+    // SPAWNING,
+    FLOATING,
+    RUNNING,
+    READY,
+    WAITING,
+    SLEEPING,
+};
+
+struct Thread_context {
+    physical_t page_map_top;
+    struct Registers ctx;
+    enum thread_state state;
+    // struct Queue_node queue;
+};
 
 #define CTX_SYS_OP(ctx) ((ctx)->rax)
 #define CTX_SYS_A0(ctx) ((ctx)->rdi)
@@ -36,14 +55,10 @@ typedef struct Context* Context;
 #define CTX_SYS_PC(ctx) ((ctx)->rip)
 
 void cpu_context_initialise_user(Context context, usize code, usize stack);
-struct Process* cpu_context_save();
-void cpu_context_restore_and_exit(struct Process* process) __attribute__((noreturn));
+struct Thread_context* cpu_context_save();
+void cpu_context_restore_and_exit(struct Thread_context* process) __attribute__((noreturn));
 void cpu_exit_idle() __attribute__((noreturn));
 
-inline struct Cpu*
-get_cpu() { return this_cpu->self; }
-
-extern struct Cpu* (*cpu_array)[];
-extern int cpu_count;
-
-void x86_64_cpu_create_tls(u8 lapic_id, usize kernel_stack);
+#ifdef __cplusplus
+} // extern C
+#endif

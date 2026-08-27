@@ -3,7 +3,7 @@
 #include "kdef.h"
 
 struct Framebuffer {
-    void* restrict address;
+    void* __restrict__ address;
     int width;                // pixels
     int height;               // pixels
     int pitch;                // bytes

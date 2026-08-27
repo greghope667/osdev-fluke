@@ -1,5 +1,7 @@
 #pragma once
 
+#include "klib.hxx"
+
 struct Descriptor {
     struct Handle* handle;
     bool open;
@@ -21,8 +23,8 @@ struct Descriptor_table {
     // struct Descriptor_table_l2* l2[4];
 };
 
-struct Descriptor* descriptor_new(struct Descriptor_table*, int* fd);
-struct Descriptor* descriptor_get(struct Descriptor_table*, int fd);
-bool descriptor_close(struct Descriptor_table*, int fd);
+result<Descriptor*> descriptor_new(struct Descriptor_table*, int* fd);
+result<Descriptor*> descriptor_get(struct Descriptor_table*, int fd);
+result<void> descriptor_close(struct Descriptor_table*, int fd);
 // struct Descriptor* descriptor_reserve(struct Descriptor_table*, int* fd);
 void descriptor_assign(struct Descriptor*, struct Handle*);

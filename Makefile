@@ -1,10 +1,13 @@
 .PHONY: dirs all elf iso clean run debug
 .DEFAULT_GOAL := all
+MAKEFLAGS += --no-builtin-rules
 
 ### Customisation
 
 CC ?= gcc
+LD ?= ld
 CFLAGS ?= -Og -g3
+CXXFLAGS ?= -Og -g3
 ASMFLAGS ?= -g3
 LIMINE_DATA ?= /usr/share/limine
 
@@ -18,16 +21,14 @@ dirs:
 
 ### C/ASM build config
 
-CFLAGS +=\
-	-std=gnu23 \
+FLAGS =\
 	-Isrc \
 	-Wall \
 	-Wextra \
-	-static \
-	-nostdlib \
 	-mgeneral-regs-only \
 	-mno-red-zone \
 	-mcmodel=kernel \
+	-fno-asynchronous-unwind-tables \
 	-fno-pie \
 	-fno-omit-frame-pointer \
 	-fno-stack-protector \
@@ -35,37 +36,45 @@ CFLAGS +=\
 	-fbuiltin
 
 ifneq (,$(findstring clang,$(CC)))
-	CFLAGS +=\
+	FLAGS +=\
 		--target=x86_64-elf \
-		-mstack-alignment=3
+		-mstack-alignment=8
 	ASMFLAGS += -fno-integrated-as
 else
-	CFLAGS +=\
+	FLAGS +=\
 		-mpreferred-stack-boundary=3
 endif
 
+CFLAGS += $(FLAGS) -std=gnu23
+CXXFLAGS += $(FLAGS) -std=gnu++26 -fno-exceptions -fno-rtti -Wno-invalid-offsetof
+LDFLAGS += -static --eh-frame-hdr -znoexecstack
+
 C_SRCS = $(shell find src -name '*.c')
+CXX_SRCS = $(shell find src -name '*.cxx')
 ASM_SRCS = $(shell find src -name '*.s')
-OBJS = $(ASM_SRCS:%.s=build/%.o) $(C_SRCS:%.c=build/%.o)
-DEPS = $(C_SRCS:%.c=build/%.d)
+OBJS = $(ASM_SRCS:%.s=build/%.o) $(C_SRCS:%.c=build/%.o) $(CXX_SRCS:%.cxx=build/%.o)
+DEPS = $(C_SRCS:%.c=build/%.d) $(CXX_SRCS:%.cxx=build/%.d)
 
 -include $(DEPS)
 
 build/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -MMD -MF build/$*.d -o $@
 
+build/%.o: %.cxx
+	$(CC) $(CXXFLAGS) -c $< -MMD -MF build/$*.d -o $@
+
 build/%.o: %.s
 	$(CC) -x assembler-with-cpp $(ASMFLAGS) -c $< -o $@
 
 bin/os.elf: $(OBJS) src/linker.ld
-	$(CC) $(CFLAGS) $(OBJS) -T src/linker.ld -o $@
-	nm -n bin/os.elf > bin/symbols
+	$(LD) $(LDFLAGS) $(OBJS) -T src/linker.ld -o $@
+	nm -n bin/os.elf | c++filt -p > bin/symbols
 	printf "\n" >> bin/symbols
 	objcopy --update-section .symbols=bin/symbols bin/os.elf
 	size $(OBJS) $@
 
 isodir/boot/init: programs/init.c src/fluke.h
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) -static -nostdlib $< -o $@
 
 ### ISO build
 

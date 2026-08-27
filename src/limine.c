@@ -1,13 +1,8 @@
 #include "bootloader.h"
-#include "mem/alloc.h"
 #include "print/console.h"
 #include "klib.h"
 #include "mem/memory.h"
 #include "mem/pmm.h"
-#include "errno.h"
-#include "user/handle.h"
-#include "user/process.h"
-#include "user/schedule.h"
 
 #include <limine.h>
 
@@ -142,6 +137,8 @@ bootloader_run_setup()
     }
 }
 
+extern void spawn_init_elf(void* elf);
+
 void
 bootloader_run_init_modules()
 {
@@ -151,45 +148,12 @@ bootloader_run_init_modules()
         auto module = response->modules[i];
         if (memcmp(module->string, "init", 4) == 0) {
             klog("bootloader_run_init_modules: loading %s\n", module->path);
-            auto proc = process_create();
-            process_load_init_elf(proc, module->address);
-            schedule_ready(proc);
+            spawn_init_elf(module->address);
         }
     }
 }
 
-// Kernel modules
-// (most of this implementation should probably be elsewhere)
-
-struct Module_handle {
-    struct Handle handle;
-    void* address;
-    isize size;
-    isize offset;
-};
-
-static void
-module_destruct(struct Handle* h)
-{
-    kfree(h, sizeof(struct Module_handle));
-}
-
-static isize
-module_read(struct Handle* h, void* dest, isize len)
-{
-    assert(len > 0);
-    auto module = container_of(h, struct Module_handle, handle);
-    isize bytes = MIN(len, module->size - module->offset);
-    if (!copy_to_user(dest, module->address + module->offset, bytes))
-        return -1;
-    module->offset += bytes;
-    return bytes;
-}
-
-const struct Handle_vtbl module_vtable = {
-    .destruct = module_destruct,
-    .read = module_read,
-};
+extern struct Handle* handle_open_module(const void* data, isize size);
 
 struct Handle*
 bootloader_open_module(const char* path, usize path_len)
@@ -204,20 +168,8 @@ bootloader_open_module(const char* path, usize path_len)
             if (module->size > ISIZE_MAX)
                 panic("kernel module too large");
 
-            struct Module_handle* handle = kalloc(sizeof(*handle));
-            if (!handle)
-                return nullptr;
-
-            *handle = (struct Module_handle) {
-                .handle  = { .vtbl = &module_vtable },
-                .address = module->address,
-                .size    = module->size,
-                .offset  = 0,
-            };
-            return &handle->handle;
+            return handle_open_module(module->address, module->size);
         }
     }
-
-    errno = ENOENT;
     return nullptr;
 }

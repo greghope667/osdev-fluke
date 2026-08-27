@@ -1,0 +1,25 @@
+If:
+    PathMatch: [.*\.h, .*\.c]
+CompileFlags:
+    Add: -std=gnu23
+
+---
+
+If:
+    PathMatch: [.*\.hxx, .*\.cxx]
+CompileFlags:
+    Add: -std=gnu++26
+
+---
+
+If:
+    PathMatch: .*\.h
+CompileFlags:
+    Add: -xc-header
+
+---
+
+If:
+    PathMatch: .*\.hxx
+CompileFlags:
+    Add: -xc++-header

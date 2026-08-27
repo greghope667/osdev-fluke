@@ -52,6 +52,7 @@ alloc_page()
 void
 free_page(void *page)
 {
+    assert(page);
     assert(is_page_aligned((usize)page));
     assert(is_kernel_pointer(page));
     struct Page* vpage = page;

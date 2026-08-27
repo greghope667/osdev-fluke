@@ -4,6 +4,10 @@
 
 /* Common kernel functions, mostly libc functions (or variants thereof) */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* String functions (currently these are defined in assembly) */
 
 void* memcpy(void*, const void*, usize);
@@ -45,3 +49,12 @@ void show_backtrace_here();
     if (_done) panic("INIT_ONCE check");    \
     _done = true;                           \
 }
+
+#define TRY_ERRC(expr) ({                   \
+    error_code __e = (expr);                \
+    if (__e) return __e;                    \
+})
+
+#ifdef __cplusplus
+} // extern C
+#endif

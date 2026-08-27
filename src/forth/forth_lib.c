@@ -183,3 +183,10 @@ forth_init()
 
     forth_headers = ctx.dictionary;
 }
+
+Forth_xt
+forth_header_to_xt(const struct Forth_header* h)
+{
+    usize size = (offsetof(struct Forth_header, name) + h->name_length + 8) & ~7;
+    return ((void*)h) + size;
+}

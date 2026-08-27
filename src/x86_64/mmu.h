@@ -1,7 +1,10 @@
 #pragma once
 
 #include "kdef.h"
-#include "mem/memory.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 enum mmu_mode {
     MMU_MODE_DEFAULT    = 0,
@@ -26,10 +29,20 @@ void mmu_point1(struct Page_map pm, usize address, physical_t target, enum mmu_m
 
 physical_t virt_to_phys(struct Page_map pm, void* ptr);
 
+void mmu_configure_root_address_space();
+
 void mmu_set_address_space(struct Page_map pm);
 struct Page_map mmu_get_address_space();
 void mmu_reload_address_space();
+void mmu_leave_address_space();
 
 // Creates a new address space with kernel space mapped, and user space empty
 struct Page_map mmu_create_address_space();
 void mmu_destroy_address_space(struct Page_map pm);
+
+#ifdef __cplusplus
+} // extern C
+#endif
+
+DEFINE_ENUM_FLAG_OPERATORS(mmu_mode, u32)
+DEFINE_ENUM_FLAG_OPERATORS(mmu_cache, u32)

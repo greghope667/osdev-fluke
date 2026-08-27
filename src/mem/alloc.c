@@ -1,6 +1,5 @@
 #include "alloc.h"
 #include "klib.h"
-#include "errno.h"
 
 int alloc_calc_size_class(usize);
 void* kalloc(usize);
@@ -25,10 +24,8 @@ alloc_from_fresh_page(int size_class)
     assert(pools[size_class] == nullptr);
 
     void* page = alloc_page();
-    if (!page) {
-        kerrno = ENOMEM;
+    if (!page)
         return nullptr;
-    }
 
     int entry_count = (PAGE_SIZE / 8) >> size_class;
     int size = 8 << size_class;
@@ -63,6 +60,7 @@ kalloc_class(int size_class)
 void
 kfree_class(void* ptr, int size_class)
 {
+    assert(ptr);
     assert(0 <= size_class && size_class < 10);
     struct Free_list* entry = ptr;
     entry->next = pools[size_class];

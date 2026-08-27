@@ -8,6 +8,12 @@
 #include <limits.h> // IWYU pragma: export
 #include <stdarg.h> // IWYU pragma: export
 
+#include "fluke.h" // IWYU pragma: export
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -22,6 +28,13 @@ typedef __int128_t i128;
 
 typedef ptrdiff_t isize;
 typedef size_t usize;
+
+enum [[nodiscard]] error_code : int;
+typedef enum error_code error_code;
+
+typedef struct Physical {
+    usize address;
+} physical_t;
 
 #define ISIZE_MAX PTRDIFF_MAX
 
@@ -60,3 +73,23 @@ typedef size_t usize;
 #define PAGE_SIZE 0x1000
 
 #define container_of(ptr, type, member) ((type*)((char*)ptr - offsetof(type, member)))
+
+#ifdef __cplusplus
+#define CXX_CONSTEXPR constexpr
+} // extern C
+#else
+#define CXX_CONSTEXPR
+#endif
+
+#ifdef __cplusplus
+#define DEFINE_ENUM_FLAG_OPERATORS(T, U) \
+static_assert(sizeof(T)==sizeof(U)); \
+__attribute__((always_inline)) constexpr T operator|(T l, T r) { return (T)((U)l | (U)r); } \
+__attribute__((always_inline)) constexpr T operator&(T l, T r) { return (T)((U)l & (U)r); } \
+__attribute__((always_inline)) constexpr T& operator|=(T& l, T r) { return (T&)((U&)l |= (U)r); } \
+__attribute__((always_inline)) constexpr T& operator&=(T& l, T r) { return (T&)((U&)l &= (U)r); } \
+
+#else
+#define DEFINE_ENUM_FLAG_OPERATORS(T, U)
+#endif
+

@@ -1,8 +1,8 @@
-#include "descriptor.h"
+#include "descriptor.hxx"
 #include "klib.h"
-#include "mem/alloc.h"
+#include "mem/alloc.hxx"
 #include "errno.h"
-#include "handle.h"
+#include "handle.hxx"
 
 constexpr int L0 = ARRAY_LENGTH(((struct Descriptor_table*)0)->l0);
 constexpr int L1 = ARRAY_LENGTH(((struct Descriptor_table*)0)->l1);
@@ -11,8 +11,8 @@ constexpr int L1L0 = ARRAY_LENGTH(((struct Descriptor_table*)0)->l1[0]->l0);
 constexpr int DIRECT = L0;
 constexpr int INDIRECT = L1 * L1L0;
 
-struct Descriptor*
-descriptor_new(struct Descriptor_table* table, int* fd)
+result<Descriptor*>
+descriptor_new(Descriptor_table* table, int* fd)
 {
     int n = 0;
 
@@ -20,7 +20,7 @@ descriptor_new(struct Descriptor_table* table, int* fd)
     for (int i=0; i<L0; i++, n++) {
         if (!table->l0[i].open) {
             *fd = n;
-            return &table->l0[i];
+            return { &table->l0[i] };
         }
     }
 
@@ -29,13 +29,11 @@ descriptor_new(struct Descriptor_table* table, int* fd)
         auto l1 = table->l1[i];
 
         if (!l1) {
-            l1 = kalloc(sizeof(*l1));
+            l1 = TRY_ALLOC(kalloc_t<typeof(*l1)>());
             memset(l1, 0, sizeof(*l1));
-            if (!l1)
-                return nullptr;
             table->l1[i] = l1;
             *fd = n;
-            return &l1->l0[0];
+            return { &l1->l0[0] };
         }
 
         for (int j=0; j<L1L0; j++, n++) {
@@ -46,20 +44,21 @@ descriptor_new(struct Descriptor_table* table, int* fd)
         }
     }
 
-    errno = EMFILE;
-    return nullptr;
+    return error_code(EMFILE);
 }
 
-struct Descriptor*
-descriptor_get(struct Descriptor_table* table, int fd)
+result<Descriptor*>
+descriptor_get(Descriptor_table* table, int fd)
 {
+    auto fail = error_code(EBADF);
+
     if (fd < 0)
-        goto fail;
+        return fail;
 
     if (fd < DIRECT) {
         auto l0 = &table->l0[fd];
         if (!l0->open)
-            goto fail;
+            return fail;
         return l0;
     }
 
@@ -67,22 +66,21 @@ descriptor_get(struct Descriptor_table* table, int fd)
     if (fd < INDIRECT) {
         auto l1 = table->l1[fd / L1L0];
         if (!l1)
-            goto fail;
+            return fail;
         auto l0 = &l1->l0[fd % L1L0];
         if (!l0->open)
-            goto fail;
+            return fail;
         return l0;
     }
-fail:
-    errno = EBADF;
-    return nullptr;
+
+    return fail;
 }
 
 void
-descriptor_assign(struct Descriptor* descriptor, struct Handle* handle)
+descriptor_assign(Descriptor* descriptor, Handle* handle)
 {
     assert(!descriptor->open);
-    assert(handle->refcount >= 0);
-    *descriptor = (struct Descriptor) { .open = true, .handle = handle };
-    handle->refcount++;
+    assert(handle->refcount() >= 0);
+    *descriptor = (struct Descriptor) { .handle = handle, .open = true };
+    handle->dup();
 }

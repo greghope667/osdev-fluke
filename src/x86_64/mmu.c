@@ -1,6 +1,7 @@
 #include "mmu.h"
 #include "mem/alloc.h"
 #include "klib.h"
+#include "mem/memory.h"
 
 static void* mmu_alloc_page()
 {
@@ -300,4 +301,20 @@ mmu_point1(
         panic("mmu_point1: address already mapped");
 
     *entry = (target.address & TABLE_ENTRY_ADDRESS_MASK) | entry_flags(cache, mode);
+}
+
+static struct Page_map root;
+
+void
+mmu_configure_root_address_space()
+{
+    INIT_ONCE;
+    root = mmu_get_address_space();
+    mmu_clear(root, 0, MEM_LOW_HALF_MAX);
+}
+
+void
+mmu_leave_address_space()
+{
+    mmu_set_address_space(root);
 }

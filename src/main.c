@@ -7,15 +7,16 @@
 
 #include "user/schedule.h"
 #include "x86_64/apic.h"
-#include "x86_64/cpu.h"
 #include "x86_64/time.h"
 #include "x86_64/descriptors.h"
-#include "x86_64/cpu.h"
+#include "x86_64/tls.h"
 
 #include "forth/forth.h"
 
 extern const char pid0_code[];
 extern const usize pid0_size;
+
+extern void cpp_test_code();
 
 void entry(void* stack) {
     symbol_table_init();
@@ -62,6 +63,7 @@ void entry(void* stack) {
     bootloader_run_init_modules();
 
     x86_64_apic_set_tickrate(1);
+    cpp_test_code();
     schedule();
 
     panic("reached end of main");

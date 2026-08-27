@@ -1,7 +1,6 @@
 #include "apic.h"
 
 #include "klib.h"
-#include "mem/memory.h"
 #include "x86_64/mmu.h"
 
 static const physical_t IOAPIC_ADDRESS_P = { 0xfec0'0000 };

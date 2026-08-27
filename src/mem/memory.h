@@ -2,9 +2,9 @@
 
 #include "kdef.h"
 
-typedef struct Physical {
-    usize address;
-} physical_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern usize hhdm_offset;
 
@@ -27,5 +27,10 @@ is_kernel_pointer(const void* v) { return (usize)v >= MEM_HIGH_HALF_MIN; }
 inline bool
 is_page_aligned(usize a) { return (a & (PAGE_SIZE-1)) == 0; }
 
-bool copy_to_user(void* dest, const void* src, isize size);
-bool copy_from_user(void* dest, const void* src, isize size);
+error_code copy_to_user(void* dest, const void* src, isize size);
+error_code copy_from_user(void* dest, const void* src, isize size);
+error_code check_user_range(const void* v, isize len);
+
+#ifdef __cplusplus
+}
+#endif

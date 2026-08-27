@@ -1,7 +1,6 @@
 #include "apic.h"
 
 #include "klib.h"
-#include "mem/memory.h"
 #include "mmu.h"
 #include "time.h"
 

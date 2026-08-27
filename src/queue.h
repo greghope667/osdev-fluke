@@ -2,6 +2,10 @@
 
 #include "klib.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct Queue;
 
 struct Queue_node {
@@ -18,3 +22,7 @@ struct Queue {
 struct Queue_node* queue_pop(struct Queue* queue);
 void queue_push(struct Queue* queue, struct Queue_node* node);
 void queue_node_remove(struct Queue_node* node);
+
+#ifdef __cplusplus
+} // extern C
+#endif

@@ -86,23 +86,27 @@ SYSCALL(virtual_map)
 
     usize prot = CTX_SYS_A2(ctx);
     if (prot & ~(PROT_EXEC | PROT_READ | PROT_WRITE))
-      return error_code(EINVAL);
-
-    usize flags = CTX_SYS_A3(ctx);
-    if (flags & ~MAP_FIXED)
         return error_code(EINVAL);
 
-    if (flags & MAP_FIXED) {
+    usize flags = CTX_SYS_A3(ctx);
+    if (flags & ~(MAP_FIXED | MAP_FIXED_NOREPLACE))
+        return error_code(EINVAL);
+
+    if (flags & (MAP_FIXED | MAP_FIXED_NOREPLACE)) {
         if (!is_page_aligned(addr))
             return error_code(EINVAL);
-        TRY(process->vm.alloc_fixed(addr, len, prot));
+
+        if (flags & MAP_FIXED)
+            TRY(process->vm.alloc_fixed_overwrite(addr, len, prot));
+        else
+            TRY(process->vm.alloc_fixed_noreplace(addr, len, prot));
+
         return addr;
     } else {
+        addr = ROUND_DOWN_P2(addr, PAGE_SIZE);
         return (usize)TRY(process->vm.alloc_movable(addr, len, prot));
     }
 }
-
-#pragma GCC diagnostic ignored "-Wc99-designator"
 
 result<usize> (*const syscalls[])(Context ctx, Thread*) = {
     ENTRY(nop),

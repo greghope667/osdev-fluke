@@ -37,12 +37,9 @@ void mmu_reload_address_space();
 void mmu_leave_address_space();
 
 // Creates a new address space with kernel space mapped, and user space empty
-struct Page_map mmu_create_address_space();
+error_code mmu_create_address_space(struct Page_map* out);
 void mmu_destroy_address_space(struct Page_map pm);
 
 #ifdef __cplusplus
 } // extern C
 #endif
-
-DEFINE_ENUM_FLAG_OPERATORS(mmu_mode, u32)
-DEFINE_ENUM_FLAG_OPERATORS(mmu_cache, u32)

@@ -80,16 +80,3 @@ typedef struct Physical {
 #else
 #define CXX_CONSTEXPR
 #endif
-
-#ifdef __cplusplus
-#define DEFINE_ENUM_FLAG_OPERATORS(T, U) \
-static_assert(sizeof(T)==sizeof(U)); \
-__attribute__((always_inline)) constexpr T operator|(T l, T r) { return (T)((U)l | (U)r); } \
-__attribute__((always_inline)) constexpr T operator&(T l, T r) { return (T)((U)l & (U)r); } \
-__attribute__((always_inline)) constexpr T& operator|=(T& l, T r) { return (T&)((U&)l |= (U)r); } \
-__attribute__((always_inline)) constexpr T& operator&=(T& l, T r) { return (T&)((U&)l &= (U)r); } \
-
-#else
-#define DEFINE_ENUM_FLAG_OPERATORS(T, U)
-#endif
-

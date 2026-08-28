@@ -1,5 +1,5 @@
 #include "schedule.h"
-#include "queue.h"
+#include "containers/queue.h"
 #include "x86_64/time.h"
 #include "process.hxx"
 #include "x86_64/tls.h"
@@ -85,7 +85,7 @@ wakeup_sleepers()
 void
 schedule()
 {
-    auto thread = get_tls()->current_thread;
+    auto thread = get_tls_current_thread();
     if (thread) {
         cpu_context_save();
         schedule_ready(thread);

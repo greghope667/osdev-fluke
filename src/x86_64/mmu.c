@@ -31,14 +31,15 @@ mmu_reload_address_space()
     asm volatile ("mov %%cr3, %0\nmov %0, %%cr3" : "=r"(scratch));
 }
 
-struct Page_map
-mmu_create_address_space()
+error_code
+mmu_create_address_space(struct Page_map* out)
 {
     void* page = mmu_alloc_page();
     const void* current = phys_to_virt(mmu_get_address_space().top_address);
     const int HALF = PAGE_SIZE / 2;
     memcpy(page + HALF, current + HALF, HALF);
-    return (struct Page_map){ hhdm_virt_to_phys(page) };
+    *out = (struct Page_map){ hhdm_virt_to_phys(page) };
+    return 0;
 }
 
 void

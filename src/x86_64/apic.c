@@ -42,8 +42,8 @@ enum timer_divisor {
     DIVISOR_1 = 0b1011,
 };
 
-static void
-measure_frequency()
+void
+x86_64_apic_measure_frequency()
 {
     klog("apic.c: measuring frequency using tsc\n");
 
@@ -80,7 +80,7 @@ x86_64_apic_initialise()
         *apic_reg(APIC_ID), *apic_reg(APIC_VERSION)
     );
 
-    measure_frequency();
+    x86_64_apic_measure_frequency();
 }
 
 void

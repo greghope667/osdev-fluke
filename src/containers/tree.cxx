@@ -1,9 +1,12 @@
-#include "tree.h"
+#include "tree.hxx"
 
 #include "klib.h"
 
-typedef struct Tree_node Node;
-typedef struct Tree Tree;
+// typedef struct Tree_node Node;
+// typedef struct Tree Tree;
+using Node = Tree::Node;
+constexpr bool DIR_LEFT = false;
+constexpr bool DIR_RIGHT = true;
 
 static int
 rng()
@@ -53,28 +56,28 @@ rotate_up(Tree* tree, Node* parent, Node* child)
 }
 
 void
-tree_insert_at(
-    Tree* tree,
-    Node* parent,
-    enum tree_dir dir,
-    Node* child,
-    isize key
-) {
+Tree::insert_at(Node* parent, direction dir, Node* child)
+{
+    if (not parent)
+        return insert_root(child);
+
     assert(parent->child[dir] == nullptr);
+    assert(child->parent == nullptr);
 
     parent->child[dir] = child;
 
     *child = (Node) {
-        .dir = dir,
-        .key = key,
         .parent = parent,
+        .child = {},
         .priority = rng(),
+        .dir = dir,
     };
 
     if (child->priority > parent->priority)
-        rotate_up(tree, parent, child);
+        rotate_up(this, parent, child);
 }
 
+/*
 void
 tree_insert(
     Tree* tree,
@@ -96,6 +99,21 @@ tree_insert(
             parent = next;
         }
     }
+}
+*/
+void
+Tree::insert_root(Node* node)
+{
+    assert(root == nullptr);
+    assert(node->parent == nullptr);
+
+    root = node;
+    *node = (Node) {
+        .parent = nullptr,
+        .child = {},
+        .priority = rng(),
+        .dir = {},
+    };
 }
 
 static void
@@ -157,12 +175,37 @@ tree_remove_at(
 }
 
 void
-tree_remove(
-    Tree* tree,
-    Node* node
-) {
-    assert(tree->root);
-    Node** parent_ptr = node->parent ? &node->parent->child[node->dir] : &tree->root;
+Tree::remove(Node* node)
+{
+    assert(root);
+    Node** parent_ptr = node->parent ? &node->parent->child[node->dir] : &root;
     tree_remove_at(parent_ptr, node);
     memset(node, 0, sizeof(Node));
+}
+
+static inline Node*
+leftmost(Node* node)
+{
+    while (node->left)
+        node = node->left;
+    return node;
+}
+
+Node*
+Tree::begin()
+{
+    if (not root)
+        return nullptr;
+    return leftmost(root);
+}
+
+Node*
+Tree::Node::next()
+{
+    if (right)
+        return leftmost(right);
+    auto n = this;
+    while (n->dir == DIR_RIGHT)
+        n = n->parent;
+    return n->parent;
 }

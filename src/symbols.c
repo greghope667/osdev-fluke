@@ -1,6 +1,7 @@
 #include "symbols.h"
 
 #include "klib.h"
+#include "mem/memory.h"
 
 const struct Symbol* symbol_list = 0;
 
@@ -60,9 +61,16 @@ ksym_n(const char* name, isize len)
     return nullptr;
 }
 
+static struct Symbol user_space = {
+    .length = 6,
+    .name = "(user)",
+};
+
 const struct Symbol*
 symbol_of_address(void* address)
 {
+    if (is_user_pointer(address))
+        return &user_space;
     const struct Symbol* match = 0;
     for (const struct Symbol* s = symbol_list; s; s = s->next) {
         if (s->address >= address)

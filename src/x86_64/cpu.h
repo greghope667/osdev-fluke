@@ -40,7 +40,6 @@ struct Thread_context {
     physical_t page_map_top;
     struct Registers ctx;
     enum thread_state state;
-    // struct Queue_node queue;
 };
 
 #define CTX_SYS_OP(ctx) ((ctx)->rax)

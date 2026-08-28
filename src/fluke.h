@@ -19,6 +19,7 @@
 #define EMFILE                      7
 #define EBADF                       8
 #define EFAULT                      9
+#define EEXIST                      10
 
 
 #define PROT_NONE                   0
@@ -28,3 +29,4 @@
 
 
 #define MAP_FIXED                   (1 << 0)
+#define MAP_FIXED_NOREPLACE         (1 << 1)

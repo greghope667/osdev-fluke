@@ -36,6 +36,12 @@ pmm_add_pages(physical_t start, isize length)
     pmm.free_count  += length / PAGE_SIZE;
 }
 
+static void
+debug_memset(void* page, int c)
+{
+    memset(page, c, PAGE_SIZE);
+}
+
 void*
 alloc_page()
 {
@@ -46,6 +52,7 @@ alloc_page()
     pmm.free_list = page->next;
     assert(pmm.free_count > 0);
     pmm.free_count--;
+    debug_memset(page, 0xdd);
     return page;
 }
 
@@ -55,6 +62,7 @@ free_page(void *page)
     assert(page);
     assert(is_page_aligned((usize)page));
     assert(is_kernel_pointer(page));
+    debug_memset(page, 0xee);
     struct Page* vpage = page;
     vpage->next = pmm.free_list;
     pmm.free_list = vpage;

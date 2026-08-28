@@ -75,7 +75,7 @@ udiv(u64 upper, u64 lower, u64 divisor)
 }
 
 void
-tsc_init()
+x86_64_tsc_init()
 {
     INIT_ONCE;
     u64 freq = read_tsc_cpuid();

@@ -2,7 +2,7 @@
 
 #include "vm.hxx"
 #include "x86_64/cpu.h"
-#include "queue.h"
+#include "containers/queue.h"
 #include "descriptor.hxx"
 
 struct Thread : Thread_context {
@@ -13,6 +13,8 @@ struct Thread : Thread_context {
     } timeout;
 
     struct Queue_node queue;
+
+    struct Process& get_process();
 };
 
 struct Process {
@@ -31,6 +33,8 @@ struct Process {
 
     void load_flat_binary(const char* binary, usize size);
     void load_init_elf(const char* elf);
+
+    VM& get_vm();
 };
 
 // result<Process*> process_create();

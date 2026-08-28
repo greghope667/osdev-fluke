@@ -90,6 +90,9 @@ syscall_entry(struct Registers* ctx)
     this_tls->user_context = ctx;
     CTX_SYS_R0(ctx) = syscall(ctx, this_tls->current_thread);
     klog("Syscall response: %zx\n", CTX_SYS_R0(ctx));
+    isize errno = CTX_SYS_R0(ctx);
+    if (-1000 < errno && errno < 0)
+        klog("    errno = %zi\n", -errno);
 
     // If thread has been scheduled away, syscall() should not return
     assert(this_tls->current_thread != nullptr);

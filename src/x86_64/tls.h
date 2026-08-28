@@ -18,6 +18,7 @@ struct Tls {
 #define this_tls ((__seg_gs struct Tls*)0)
 
 struct Tls* get_tls();
+struct Thread_context* get_tls_current_thread();
 void x86_64_cpu_create_tls(u8 lapic_id, usize kernel_stack);
 
 #ifdef __cplusplus

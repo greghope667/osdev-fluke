@@ -56,3 +56,9 @@ get_tls()
 {
     return this_tls->self;
 }
+
+struct Thread_context*
+get_tls_current_thread()
+{
+    return this_tls->current_thread;
+}

@@ -9,7 +9,7 @@ extern struct Timer_calibration {
     u64 offset;
 } tsc_calibration;
 
-void tsc_init();
+void x86_64_tsc_init();
 
 inline u64
 rdtsc()

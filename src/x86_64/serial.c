@@ -3,10 +3,6 @@
 #include "io_port.h"
 #include "klib.h"
 
-// TODO: move these
-u8 io_inb(u16 addr);
-void io_outb(u16 addr, u8 byte);
-
 /* Serial port - in IO space
  * struct serial {
  *     union {

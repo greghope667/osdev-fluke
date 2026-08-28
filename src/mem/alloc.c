@@ -18,6 +18,12 @@ struct Pool_data {
 static struct Free_list* pools[10];
 static struct Pool_data stats[10];
 
+static inline void*
+debug_memset(void* ptr, int c, int size_class)
+{
+    return memset(ptr, c, 8 << size_class);
+}
+
 static void*
 alloc_from_fresh_page(int size_class)
 {
@@ -40,7 +46,7 @@ alloc_from_fresh_page(int size_class)
     stats[size_class].free_count += (entry_count - 1);
     stats[size_class].total_count += entry_count;
 
-    return page;
+    return debug_memset(page, 0xaa, size_class);
 }
 
 void*
@@ -51,7 +57,7 @@ kalloc_class(int size_class)
     if (entry) {
         pools[size_class] = entry->next;
         stats[size_class].free_count--;
-        return entry;
+        return debug_memset(entry, 0xbb, size_class);
     } else {
         return alloc_from_fresh_page(size_class);
     }
@@ -62,6 +68,7 @@ kfree_class(void* ptr, int size_class)
 {
     assert(ptr);
     assert(0 <= size_class && size_class < 10);
+    debug_memset(ptr, 0xcc, size_class);
     struct Free_list* entry = ptr;
     entry->next = pools[size_class];
     pools[size_class] = entry;

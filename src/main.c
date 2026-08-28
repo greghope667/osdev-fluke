@@ -16,9 +16,7 @@
 extern const char pid0_code[];
 extern const usize pid0_size;
 
-extern void cpp_test_code();
-
-void entry(void* stack) {
+void _main(void* stack) {
     symbol_table_init();
 
     int port = serial_init();
@@ -31,7 +29,7 @@ void entry(void* stack) {
     print_dest_enable(PRINT_DEST_CONSOLE);
     klog("entry: display initialised\n");
 
-    tsc_init();
+    x86_64_tsc_init();
 
     klog("entry: boot stack %p\n", stack);
 
@@ -63,8 +61,13 @@ void entry(void* stack) {
     bootloader_run_init_modules();
 
     x86_64_apic_set_tickrate(1);
-    cpp_test_code();
     schedule();
 
     panic("reached end of main");
+}
+
+void
+__cxa_pure_virtual()
+{
+    panic(__FUNCTION__);
 }

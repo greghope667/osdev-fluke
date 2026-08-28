@@ -5,7 +5,9 @@ MAKEFLAGS += --no-builtin-rules
 ### Customisation
 
 CC ?= gcc
+AS ?= gcc
 LD ?= ld
+
 CFLAGS ?= -Og -g3
 CXXFLAGS ?= -Og -g3
 ASMFLAGS ?= -g3
@@ -39,7 +41,6 @@ ifneq (,$(findstring clang,$(CC)))
 	FLAGS +=\
 		--target=x86_64-elf \
 		-mstack-alignment=8
-	ASMFLAGS += -fno-integrated-as
 else
 	FLAGS +=\
 		-mpreferred-stack-boundary=3
@@ -64,7 +65,7 @@ build/%.o: %.cxx
 	$(CC) $(CXXFLAGS) -c $< -MMD -MF build/$*.d -o $@
 
 build/%.o: %.s
-	$(CC) -x assembler-with-cpp $(ASMFLAGS) -c $< -o $@
+	$(AS) -x assembler-with-cpp $(ASMFLAGS) -c $< -o $@
 
 bin/os.elf: $(OBJS) src/linker.ld
 	$(LD) $(LDFLAGS) $(OBJS) -T src/linker.ld -o $@

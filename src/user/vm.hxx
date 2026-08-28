@@ -2,15 +2,17 @@
 
 #include "klib.hxx"
 #include "x86_64/mmu.h"
-#include "tree.h"
 
 struct VM {
-    struct Page_map page_map;
-    struct Tree ranges;
+    Page_map page_map;
+    // Tree ranges;
+    // usize first_region;
+    struct VM_area* first;
 
     result<void> init();
-    result<void> alloc_fixed(usize address, isize length, unsigned prot);
+    result<void> alloc_fixed_overwrite(usize address, isize length, unsigned prot);
+    result<void> alloc_fixed_noreplace(usize address, isize length, unsigned prot);
     result<void*> alloc_movable(usize hint, isize length, unsigned prot);
-    void free(usize address, isize length);
+    result<void> free(usize address, isize length);
     void print();
 };

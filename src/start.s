@@ -11,7 +11,7 @@ _start:
         and     rdi, ~0xfff             # Calculate top of stack
         xor     ebp, ebp
         push    rbp                     # Create end of rbp call chain
-        call    entry
+        call    _main
 _hcf:
         cli
         hlt

@@ -1,7 +1,6 @@
 #include "descriptor.hxx"
 #include "klib.h"
 #include "mem/alloc.hxx"
-#include "errno.h"
 #include "handle.hxx"
 
 constexpr int L0 = ARRAY_LENGTH(((struct Descriptor_table*)0)->l0);

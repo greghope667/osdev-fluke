@@ -1,6 +1,5 @@
 #include "memory.h"
 #include "klib.h"
-#include "errno.h"
 
 error_code
 copy_to_user(void* dest, const void* src, isize size)

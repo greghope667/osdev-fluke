@@ -1,6 +1,5 @@
 #include "vm.hxx"
 
-#include "fluke.h"
 #include "klib.h"
 #include "mem/alloc.hxx"
 #include "mem/memory.h"
@@ -9,7 +8,6 @@
 static constexpr usize ADDR_MIN = PAGE_SIZE;
 static constexpr usize ADDR_MAX = MEM_LOW_HALF_MAX;
 static constexpr usize ADDR_DEFAULT_HINT = 0xaaabbbull * 1024 * 1024;
-static constexpr usize ADDR_AUTO_SMALLEST = 1024 * 1024;
 
 struct VM_area {
     VM_area* next;
@@ -19,7 +17,7 @@ struct VM_area {
 
     isize space_after() {
         auto end_of_space = next ? next->begin : ADDR_MAX;
-        return end_of_space - begin;
+        return end_of_space - end;
     }
 
     enum Overlap {
@@ -91,8 +89,11 @@ vm_clear_for_insert(VM& vm, usize address, usize end)
 
         case VM_area::Whole:
             *route = area->next;
-            area = area->next;
-            kfree_t(area);
+            area = [area]{
+                auto next = area->next;
+                kfree_t(area);
+                return next;
+            }();
             continue;
 
         case VM_area::Ends_with:
@@ -227,13 +228,58 @@ VM::alloc_fixed_overwrite(usize address, isize length, unsigned flags)
     return {};
 }
 
-result<void*>
+result<char*>
 VM::alloc_movable(usize hint, isize length, unsigned flags)
 {
-    assert(length > 0);
-    puts(__FILE__ " TODO: replace with proper implementation");
-    TRY(alloc_fixed_noreplace(hint, length, flags));
-    return (void*)hint;
+    if (hint < ADDR_MIN || hint >= ADDR_MAX)
+        hint = ADDR_DEFAULT_HINT;
+
+    if (hint + length > ADDR_MAX)
+        return error_code(EINVAL);
+
+    VM_area vm_list_begin = {
+        .next = first,
+        .begin = ADDR_MIN,
+        .end = ADDR_MIN,
+        .flags = (unsigned)-1,
+    };
+
+    auto new_area = TRY(owned<VM_area>::make());
+    VM_area* region{};
+
+    for (auto* area = &vm_list_begin; area; area = area->next) {
+        if (area->space_after() >= length) {
+            if (area->end < hint) {
+                region = area;
+            } else {
+                if (not region || area->end - hint < hint - region->end)
+                    region = area;
+                break;
+            }
+        }
+    }
+
+    if (not region)
+        return error_code(ENOMEM);
+
+    auto address = std::clamp(hint, region->end, region->next ? region->next->begin : ADDR_MAX);
+    assert_valid(address, length);
+    auto mode = prot_to_mode(flags);
+
+    *new_area = {
+        .next = region->next,
+        .begin = address,
+        .end = address + length,
+        .flags = mode,
+    };
+
+    if (flags)
+        mmu_assign(page_map, address, length, mode, MMU_CACHE_DEFAULT);
+
+    region->next = new_area.release();
+    first = vm_list_begin.next;
+
+    return (char*)address;
 }
 
 static void

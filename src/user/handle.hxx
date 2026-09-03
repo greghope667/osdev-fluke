@@ -5,6 +5,7 @@
 struct Handle {
     virtual result<isize> read(void* buffer, isize len);
     virtual result<isize> write(const void* data, isize len);
+    virtual result<isize> seek(isize offset, int whence);
     // virtual ~Handle();
 
     void dup() { ref_count_++; };

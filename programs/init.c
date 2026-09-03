@@ -1,4 +1,4 @@
-#include "fluke.h"
+#include "fluke/fluke.h"
 
 asm (
     ".global    _start\n"
@@ -41,25 +41,32 @@ forth(const char* str)
     syscall6(SYSCALL_forth_interpret, (long)str, strlen(str)+1, 0, 0, 0, 0);
 }
 
-int main()
+void
+print_mem_regions()
 {
-    for (int i=0; i<3; i++)
-        syscall6(SYSCALL_virtual_map, (0x60+i)<<12, 0x4000, PROT_READ|PROT_WRITE, MAP_FIXED, 0, 0);
-    *(int*)0x60000 = 0xaabbccdd;
-    // syscall6(SYSCALL_nsleep, 5'000'000'000, 0, 0, 0, 0, 0);
-
-    for (int i=0; i<3; i++)
-        forth("0 x86_64_apic_measure_frequency ccall1");
-
     forth(
         "0 get_tls_current_thread ccall1\n"
         "Thread::get_process ccall1\n"
         "Process::get_vm ccall1\n"
         "VM::print ccall1\n"
     );
+}
 
-    static const char panic[] = ": abort0 parse drop panic ccall1 ; abort0 abort from init";
-    forth(panic);
+int main()
+{
+    for (int i=0; i<3; i++) {
+        syscall6(SYSCALL_virtual_map, (0x60+i)<<12, 0x4000, PROT_READ|PROT_WRITE, 0, 0, 0);
+        syscall6(SYSCALL_virtual_map, 0, 0x8000, PROT_READ|PROT_WRITE, 0, 0, 0);
+    }
+    // *(int*)0x60000 = 0xaabbccdd;
+    // syscall6(SYSCALL_nsleep, 5'000'000'000, 0, 0, 0, 0, 0);
+
+    for (int i=0; i<3; i++)
+        forth("0 x86_64_apic_measure_frequency ccall1");
+
+    print_mem_regions();
+
+    forth(": abort0 parse drop panic ccall1 ; abort0 abort from init");
 
     *(volatile int*)0x1234567890 = 12;
 }

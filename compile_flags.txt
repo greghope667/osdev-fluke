@@ -4,3 +4,4 @@
 -Wno-c99-designator
 -fbuiltin
 -Isrc
+-Iinclude

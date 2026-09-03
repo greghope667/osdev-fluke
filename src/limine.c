@@ -137,22 +137,6 @@ bootloader_run_setup()
     }
 }
 
-extern void spawn_init_elf(void* elf);
-
-void
-bootloader_run_init_modules()
-{
-    auto response = limine_module_request.response;
-    usize count = response->module_count;
-    for (usize i=0; i<count; i++) {
-        auto module = response->modules[i];
-        if (memcmp(module->string, "init", 4) == 0) {
-            klog("bootloader_run_init_modules: loading %s\n", module->path);
-            spawn_init_elf(module->address);
-        }
-    }
-}
-
 extern struct Handle* handle_open_module(const void* data, isize size);
 
 struct Handle*

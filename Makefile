@@ -25,6 +25,7 @@ dirs:
 
 FLAGS =\
 	-Isrc \
+	-Iinclude \
 	-Wall \
 	-Wextra \
 	-mgeneral-regs-only \
@@ -48,7 +49,7 @@ endif
 
 CFLAGS += $(FLAGS) -std=gnu23
 CXXFLAGS += $(FLAGS) -std=gnu++26 -fno-exceptions -fno-rtti -Wno-invalid-offsetof
-LDFLAGS += -static --eh-frame-hdr -znoexecstack
+LDFLAGS += -static -znoexecstack
 
 C_SRCS = $(shell find src -name '*.c')
 CXX_SRCS = $(shell find src -name '*.cxx')
@@ -74,7 +75,7 @@ bin/os.elf: $(OBJS) src/linker.ld
 	objcopy --update-section .symbols=bin/symbols bin/os.elf
 	size $(OBJS) $@
 
-isodir/boot/init: programs/init.c src/fluke.h
+isodir/boot/init: programs/init.c include/fluke/fluke.h
 	$(CC) $(CFLAGS) -static -nostdlib $< -o $@
 
 ### ISO build

@@ -229,6 +229,39 @@ clear(
 }
 
 static void
+edit(
+    struct Translation_table* table,
+    enum depth depth,
+    usize vbegin,
+    usize vend,
+    table_entry_t flags
+) {
+    assert(vbegin < vend);
+    int shift = virt_shift(depth);
+    usize pointee_size = 1ull << shift;
+
+    usize base = ROUND_DOWN_P2(vbegin, TABLE_ENTRY_COUNT * pointee_size);
+    int ibegin = (ROUND_DOWN_P2(vbegin, pointee_size) - base) >> shift;
+    int iend = (ROUND_UP_P2(vend, pointee_size) - base) >> shift;
+
+    for (isize i=ibegin; i<iend; i++) {
+        usize next_vbegin = MAX((i << shift) + base, vbegin);
+        usize next_vend = MIN(((i+1) << shift) + base - 1, vend - 1) + 1;
+        table_entry_t* entry = &table->entries[i];
+
+        if (!(*entry & PRESENT))
+            panic("mmu: cannot edit unassigned region");
+
+        void* target = entry_target(*entry);
+        if (depth > PT) {
+            edit(target, depth-1, next_vbegin, next_vend, flags);
+        } else {
+            *entry = entry_address_bits(target) | flags;
+        }
+    }
+}
+
+static void
 validate_limits(usize address, isize len)
 {
     assert(((address | len) & (PAGE_SIZE - 1)) == 0);
@@ -262,6 +295,18 @@ mmu_clear(
 ) {
     validate_limits(address, len);
     clear(phys_to_virt(pm.top_address), PML4, address, address + len);
+}
+
+void
+mmu_edit(
+    struct Page_map pm,
+    usize address,
+    isize len,
+    enum mmu_mode mode,
+    enum mmu_cache cache
+) {
+    validate_limits(address, len);
+    edit(phys_to_virt(pm.top_address), PML4, address, address + len, entry_flags(cache, mode));
 }
 
 void
@@ -311,6 +356,7 @@ mmu_configure_root_address_space()
 {
     INIT_ONCE;
     root = mmu_get_address_space();
+    klog("Kernel PML4 page %zx\n", root.top_address.address);
     mmu_clear(root, 0, MEM_LOW_HALF_MAX);
 }
 

@@ -1,5 +1,5 @@
 #include "syscall.h"
-#include "fluke.h"
+#include "fluke/fluke.h"
 #include "forth/forth.h"
 #include "mem/memory.h"
 #include "schedule.h"
@@ -7,9 +7,9 @@
 #include "descriptor.hxx"
 #include "handle.hxx"
 #include "process.hxx"
+#include "share/share.h"
 
 #define SYSCALL(s) static result<usize> do_syscall_ ## s (Context ctx, [[maybe_unused]] Thread* thread)
-#define ENTRY(s) [ SYSCALL_ ## s - SYSCALL_nop ] = do_syscall_ ## s
 
 SYSCALL(nop)
 {
@@ -60,6 +60,12 @@ SYSCALL(open_module)
     return fd;
 }
 
+SYSCALL(user_share)
+{
+    (void)ctx;
+    return (usize)user_share_get_objects();
+}
+
 SYSCALL(read)
 {
     int fd = CTX_SYS_A0(ctx);
@@ -73,6 +79,15 @@ SYSCALL(read)
     TRY_ERRC(check_user_range(buffer, len));
 
     return TRY(handle->read(buffer, len));
+}
+
+SYSCALL(seek)
+{
+    int fd = CTX_SYS_A0(ctx);
+    auto process = container_of(thread, Process, thread);
+    auto desc = TRY(descriptor_get(&process->descriptors, fd));
+    auto handle = desc->handle;
+    return TRY(handle->seek(CTX_SYS_A1(ctx), CTX_SYS_A2(ctx)));
 }
 
 SYSCALL(virtual_map)
@@ -100,33 +115,78 @@ SYSCALL(virtual_map)
             TRY(process->vm.alloc_fixed_overwrite(addr, len, prot));
         else
             TRY(process->vm.alloc_fixed_noreplace(addr, len, prot));
-
-        return addr;
     } else {
         addr = ROUND_DOWN_P2(addr, PAGE_SIZE);
-        return (usize)TRY(process->vm.alloc_movable(addr, len, prot));
+        addr = (usize)TRY(process->vm.alloc_movable(addr, len, prot));
     }
+    process->vm.print();
+    return addr;
 }
 
-result<usize> (*const syscalls[])(Context ctx, Thread*) = {
-    ENTRY(nop),
-    ENTRY(forth_interpret),
-    ENTRY(nsleep),
-    ENTRY(open_module),
-    ENTRY(read),
-    ENTRY(virtual_map),
+SYSCALL(virtual_unmap)
+{
+    auto process = container_of(thread, Process, thread);
+
+    isize len = CTX_SYS_A1(ctx);
+    len = ROUND_UP_P2(len, PAGE_SIZE);
+    usize addr = CTX_SYS_A0(ctx);
+    if (!is_page_aligned(addr))
+        return error_code(EINVAL);
+    TRY_ERRC(check_user_range((void*)addr, len));
+
+    TRY(process->vm.free(addr, len));
+
+    process->vm.print();
+    return 0;
+}
+
+struct syscall_table_entry {
+    result<usize> (*handler)(Context ctx, Thread*);
+    const char* name;
 };
+
+static constexpr auto syscalls = []{
+    constexpr auto N = SYSCALL_virtual_unmap - SYSCALL_nop + 1;
+    std::array<syscall_table_entry, N> table = {};
+
+#define ENTRY(s) \
+    table[ SYSCALL_ ## s - SYSCALL_nop ].handler = do_syscall_ ## s; \
+    table[ SYSCALL_ ## s - SYSCALL_nop ].name = # s;
+
+    ENTRY(nop);
+    ENTRY(forth_interpret);
+    ENTRY(nsleep);
+    ENTRY(open_module);
+    ENTRY(user_share);
+    ENTRY(read);
+    ENTRY(seek);
+    ENTRY(virtual_map);
+    ENTRY(virtual_unmap);
+
+    return table;
+}();
 
 usize
 syscall(Context ctx, Thread_context* thread_ctx)
 {
     usize index = CTX_SYS_OP(ctx) - SYSCALL_nop;
-    if (index >= ARRAY_LENGTH(syscalls))
+    if (index >= syscalls.count())
         return -ENOSYS;
 
-    if (syscalls[index] == nullptr)
+    auto handler = syscalls[index].handler;
+
+    if (handler == nullptr)
         return -ENOSYS;
 
-    auto result = syscalls[index](ctx, static_cast<Thread*>(thread_ctx));
+    auto result = handler(ctx, static_cast<Thread*>(thread_ctx));
     return result ? result.value() : -result.err();
+}
+
+const char*
+syscall_get_name(Context ctx)
+{
+    usize index = CTX_SYS_OP(ctx) - SYSCALL_nop;
+    if (index >= syscalls.count())
+        return "(unnamed)";
+    return syscalls[index].name ?: "(unnamed)";
 }

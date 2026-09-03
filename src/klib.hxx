@@ -60,39 +60,35 @@ clamp(T val, T min, T max)
     return val < min ? min : (val > max ? max : val);
 }
 
-template <typename T, T v>
-struct integral_constant {
-    using value_type = T;
-    static constexpr T value = v;
+template <typename T, size_t N>
+struct array {
+    T data[N];
+    constexpr auto& operator[](this auto&& self, size_t idx) { return self.data[idx]; }
+    constexpr size_t count() const { return N; }
 };
-
-template <bool b> using bool_constant = integral_constant<bool, b>;
-
-template<class T>
-struct is_integral : std::bool_constant<
-requires (T t, T* p, void (*f)(T)) // T* parameter excludes reference types
-{
-    reinterpret_cast<T>(t); // Exclude class types
-    f(0); // Exclude enumeration types
-    p + t; // Exclude everything not yet excluded but integral types
-}> {};
-
-template <typename T>
-constexpr bool is_integral_v = is_integral<T>::value;
 
 } // namespace std
 
-template <typename T>
-struct [[nodiscard]] result {
-    constexpr result(T&& t)
-        : t(std::move(t)), errc(error_code(0)) {}
-    constexpr result(error_code e)
-        : c(), errc(e) { assert(is_err()); }
+struct result_err {
+    constexpr result_err()              : errc(error_code(0)) {}
+    constexpr result_err(error_code e)  : errc(e) { assert(is_err()); }
 
-    result(const result&) = delete;
-    result(result&&) = delete;
-    result& operator=(const result&) = delete;
-    result& operator=(result&&) = delete;
+    constexpr error_code err() {
+        assert(is_err());
+        return errc;
+    }
+
+    constexpr bool is_ok() { return errc == 0; }
+    constexpr bool is_err() { return errc != 0; }
+    constexpr explicit operator bool() { return is_ok(); }
+protected:
+    error_code errc;
+};
+
+template <typename T>
+struct [[nodiscard]] result : result_err {
+    constexpr result(T&& t)         : t(std::move(t)) {}
+    constexpr result(error_code e)  : result_err(e) {}
 
     constexpr ~result() {
         if (is_ok())
@@ -103,87 +99,38 @@ struct [[nodiscard]] result {
         assert(is_ok());
         return std::move(t);
     }
-
-    constexpr error_code err() {
-        assert(is_err());
-        return errc;
-    }
-
-    constexpr bool is_ok() { return errc == 0; }
-    constexpr bool is_err() { return errc != 0; }
-    constexpr explicit operator bool() { return is_ok(); }
 private:
     union {
         T t;
-        char c;
     };
-    error_code errc;
 };
 
 template <>
-struct [[nodiscard]] result<void> {
+struct [[nodiscard]] result<void> : result_err {
     struct unit {};
 
-    constexpr result()
-        : errc(error_code(0)) {}
-    constexpr result(unit)
-        : errc(error_code(0)) {}
-    constexpr result(error_code e)
-        : errc(e) { assert(is_err()); }
+    constexpr result()              : result_err() {}
+    constexpr result(unit)          : result_err() {}
+    constexpr result(error_code e)  : result_err(e) {}
 
     constexpr unit value() {
         assert(is_ok());
         return {};
     }
-
-    constexpr error_code err() {
-        assert(is_err());
-        return errc;
-    }
-
-    constexpr bool is_ok() { return errc == 0; }
-    constexpr bool is_err() { return errc != 0; }
-    constexpr explicit operator bool() { return is_ok(); }
-private:
-    error_code errc;
 };
 
 template <typename T>
-struct [[nodiscard]] result_trivial {
-    constexpr result_trivial(T t)
-        : t(t), errc(error_code(0)) {}
-    constexpr result_trivial(error_code e)
-        : t(), errc(e) { assert(is_err()); }
+requires __is_trivially_destructible(T)
+struct [[nodiscard]] result<T> : result_err {
+    constexpr result(T t)           : t(t) {}
+    constexpr result(error_code e)  : result_err(e) {}
 
     constexpr T value() {
         assert(is_ok());
         return t;
     }
-
-    constexpr error_code err() {
-        assert(is_err());
-        return errc;
-    }
-
-    constexpr bool is_ok() { return errc == 0; }
-    constexpr bool is_err() { return errc != 0; }
-    constexpr explicit operator bool() { return is_ok(); }
 private:
     T t;
-    error_code errc;
-};
-
-template <typename T>
-struct [[nodiscard]] result<T*> : public result_trivial<T*> {
-    constexpr result(T* t) : result_trivial<T*>(t) {}
-    constexpr result(error_code e) : result_trivial<T*>(e) {}
-};
-
-template <typename T>
-requires std::is_integral_v<T>
-struct [[nodiscard]] result<T> : public result_trivial<T> {
-    constexpr result(T t) : result_trivial<T>(t) {}
-    constexpr result(error_code e) : result_trivial<T>(e) {}
 };
 
 #define TRY(expr) ({                        \

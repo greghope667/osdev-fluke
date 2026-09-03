@@ -5,16 +5,17 @@
 #include "bootloader.h"
 #include "symbols.h"
 
+#include "user/init.h"
 #include "user/schedule.h"
 #include "x86_64/apic.h"
+#include "x86_64/mmu.h"
 #include "x86_64/time.h"
 #include "x86_64/descriptors.h"
 #include "x86_64/tls.h"
 
 #include "forth/forth.h"
 
-extern const char pid0_code[];
-extern const usize pid0_size;
+#include "share/share.h"
 
 void _main(void* stack) {
     symbol_table_init();
@@ -55,10 +56,12 @@ void _main(void* stack) {
     x86_64_load_descriptors((usize)stack);
     x86_64_cpu_create_tls(0, (usize)stack);
 
+    mmu_configure_root_address_space();
+    user_share_init();
+    user_init();
+
     x86_64_apic_initialise();
     x86_64_ioapic_initialise();
-
-    bootloader_run_init_modules();
 
     x86_64_apic_set_tickrate(1);
     schedule();

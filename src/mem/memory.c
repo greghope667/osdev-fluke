@@ -4,7 +4,7 @@
 error_code
 copy_to_user(void* dest, const void* src, isize size)
 {
-    TRY_ERRC(check_user_range(src, size));
+    TRY_ERRC(check_user_range(dest, size));
 
     // TODO: handle potential page faults
     memcpy(dest, src, size);

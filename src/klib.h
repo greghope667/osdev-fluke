@@ -1,6 +1,7 @@
 #pragma once
 // IWYU pragma: always_keep
 #include "kdef.h" // IWYU pragma: export
+#include "fluke/errno.h" // IWYU pragma: export
 
 /* Common kernel functions, mostly libc functions (or variants thereof) */
 
@@ -30,11 +31,6 @@ void write(const char*, isize);
 
 #define isupper(ch) ({ auto _ch = (ch); (_ch >= 'A') && (_ch <= 'Z'); })
 #define isprint(ch) ({ auto _ch = (ch); (_ch >= ' ') && (_ch <= 126); })
-
-/* Rounding to multiple of a given power of 2 */
-
-#define ROUND_DOWN_P2(val, power2) ((val) & ~((power2) - 1))
-#define ROUND_UP_P2(val, power2) (((val) + (power2) - 1) & ~((power2) - 1))
 
 /* Panic handling (formerly panic.h) */
 

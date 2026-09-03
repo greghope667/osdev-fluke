@@ -11,7 +11,8 @@ PHDRS
 
 SECTIONS
 {
-	/* Use high-half kernel, as required by limine */
+	__kernel_mem = 0xffff800000000000;
+
 	. = 0xffffffffc0000000;
 
 	.text : ALIGN(4K)
@@ -42,6 +43,7 @@ SECTIONS
 		__usertext = .;
 		*(.usertext)
 		*(.userconst)
+		__usertext_end = .;
 	} :userdata
 
 	.symbols : ALIGN(4K)

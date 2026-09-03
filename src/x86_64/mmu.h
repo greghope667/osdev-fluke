@@ -25,6 +25,7 @@ struct Page_map {
 
 void mmu_assign(struct Page_map pm, usize address, isize length, enum mmu_mode mode, enum mmu_cache cache);
 void mmu_clear(struct Page_map pm, usize address, isize length);
+void mmu_edit(struct Page_map pm, usize address, isize length, enum mmu_mode mode, enum mmu_cache cache);
 void mmu_point1(struct Page_map pm, usize address, physical_t target, enum mmu_mode mode, enum mmu_cache cache);
 
 physical_t virt_to_phys(struct Page_map pm, void* ptr);

@@ -8,8 +8,6 @@
 #include <limits.h> // IWYU pragma: export
 #include <stdarg.h> // IWYU pragma: export
 
-#include "fluke.h" // IWYU pragma: export
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -73,6 +71,11 @@ typedef struct Physical {
 #define PAGE_SIZE 0x1000
 
 #define container_of(ptr, type, member) ((type*)((char*)ptr - offsetof(type, member)))
+
+/* Rounding to multiple of a given power of 2 */
+
+#define ROUND_DOWN_P2(val, power2) ((val) & ~((power2) - 1))
+#define ROUND_UP_P2(val, power2) (((val) + (power2) - 1) & ~((power2) - 1))
 
 #ifdef __cplusplus
 #define CXX_CONSTEXPR constexpr

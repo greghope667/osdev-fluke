@@ -70,7 +70,7 @@ void
 interrupt_entry(u8 interrupt, struct Registers* ctx)
 {
     klog("Interrupt %u  cs %zu  ss %zu:\n", interrupt, ctx->cs, ctx->ss);
-    print_registers(ctx);
+    // print_registers(ctx);
     if (interrupt < 254)
         panic("Unhandled interrupt");
     x86_64_apic_send_eoi();
@@ -81,12 +81,12 @@ interrupt_entry(u8 interrupt, struct Registers* ctx)
 void
 syscall_entry(struct Registers* ctx)
 {
-    klog("Syscall %zx: (%zx, %zx, %zx, %zx, %zx, %zx)\n",
-        CTX_SYS_OP(ctx),
+    klog("Syscall %zx %s: (%zx, %zx, %zx, %zx, %zx, %zx)\n",
+        CTX_SYS_OP(ctx), syscall_get_name(ctx),
         CTX_SYS_A0(ctx), CTX_SYS_A1(ctx), CTX_SYS_A2(ctx),
         CTX_SYS_A3(ctx), CTX_SYS_A4(ctx), CTX_SYS_A5(ctx)
     );
-    print_registers(ctx);
+    // print_registers(ctx);
     this_tls->user_context = ctx;
     CTX_SYS_R0(ctx) = syscall(ctx, this_tls->current_thread);
     klog("Syscall response: %zx\n", CTX_SYS_R0(ctx));

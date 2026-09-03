@@ -1,6 +1,7 @@
 #include "handle.hxx"
 #include "mem/alloc.hxx"
 #include "mem/memory.h"
+#include "fluke/seek.h"
 
 struct Module : Handle {
     const char* address;
@@ -15,6 +16,7 @@ struct Module : Handle {
     }
 
     result<isize> read(void* buffer, isize len) override;
+    result<isize> seek(isize offset, int whence) override;
     void close() final;
 };
 
@@ -26,6 +28,27 @@ Module::read(void* dest, isize len)
     TRY_ERRC(copy_to_user(dest, address + offset, bytes));
     offset += bytes;
     return bytes;
+}
+
+result<isize>
+Module::seek(isize offset, int whence)
+{
+    switch (whence) {
+    case SEEK_SET:
+        break;
+    case SEEK_CUR:
+        offset += this->offset;
+        break;
+    case SEEK_END:
+        offset += this->size;
+        break;
+    default:
+        return error_code(EINVAL);
+    }
+    if (offset < 0 || offset > this->size)
+        return error_code(EINVAL);
+    this->offset = offset;
+    return offset;
 }
 
 extern "C"

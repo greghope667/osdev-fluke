@@ -50,12 +50,60 @@ set_timeout(Thread* __restrict__ thread, Thread** queue, u64 ns)
 }
 
 void
-schedule_nanosleep(Thread_context* thread_ctx, u64 wait_ns)
+schedule_nanosleep(Thread_context* thread_ctx, i64 wait_ns)
 {
-    assert(thread_ctx->state == FLOATING);
+    auto thread = static_cast<Thread*>(thread_ctx);
+
+    assert(thread->state == FLOATING);
+    assert(!thread->queue.root);
+
     thread_ctx->state = SLEEPING;
-    assert((i64)wait_ns > 0);
-    set_timeout(static_cast<Thread*>(thread_ctx), &sleep_queue, wait_ns);
+    assert(wait_ns > 0);
+    set_timeout(thread, &sleep_queue, wait_ns);
+}
+
+void
+schedule_queue_timeout(
+    Thread_context* thread_ctx,
+    Queue* queue,
+    i64 wait_ns,
+    usize timeout_return_value
+) {
+    auto thread = static_cast<Thread*>(thread_ctx);
+
+    assert(thread->state == FLOATING);
+    assert(!thread->queue.root);
+
+    CTX_SYS_R0(&thread_ctx->ctx) = timeout_return_value;
+    queue_push(queue, &thread->queue);
+    thread->state = WAITING;
+    assert(wait_ns > 0);
+    set_timeout(thread, &sleep_queue, wait_ns);
+}
+
+void
+schedule_wake(Thread_context* thread_ctx, usize return_value)
+{
+    auto thread = static_cast<Thread*>(thread_ctx);
+
+    assert(thread->state == SLEEPING || thread->state == WAITING);
+    assert(!thread->queue.root);
+
+    thread->state = FLOATING;
+    CTX_SYS_R0(&thread->ctx) = return_value;
+    if (thread->timeout.prev) {
+        *thread->timeout.prev = thread->timeout.next;
+        thread->timeout = {};
+    }
+    schedule_ready(thread);
+}
+
+void
+schedule_wake_all(Queue* queue, usize return_value)
+{
+    while (auto node = queue_pop(queue)) {
+        schedule_wake(container_of(node, Thread, queue), return_value);
+    }
 }
 
 static void
@@ -64,7 +112,14 @@ wakeup_sleepers()
     u64 now = nanoseconds();
     Thread* queued = sleep_queue;
     while (queued && queued->timeout.ns < now) {
-        assert(queued->state = SLEEPING);
+        if (queued->state == WAITING) {
+            queue_node_remove(&queued->queue);
+        } else if (queued->state == SLEEPING) {
+            // nothing to do
+        } else {
+            panic("Sleeping thread in illegal state");
+        }
+
         queued->state = FLOATING;
 
         Thread* next = queued->timeout.next;

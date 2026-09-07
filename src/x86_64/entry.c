@@ -1,5 +1,6 @@
 #include "print/console.h"
 #include "klib.h"
+#include "user/irq.h"
 #include "user/schedule.h"
 #include "user/syscall.h"
 #include "x86_64/apic.h"
@@ -69,11 +70,18 @@ exception_user_entry(u8 exception, struct Registers* ctx)
 void
 interrupt_entry(u8 interrupt, struct Registers* ctx)
 {
-    klog("Interrupt %u  cs %zu  ss %zu:\n", interrupt, ctx->cs, ctx->ss);
+    // klog("Interrupt %u  cs %zu  ss %zu:\n", interrupt, ctx->cs, ctx->ss);
     // print_registers(ctx);
-    if (interrupt < 254)
-        panic("Unhandled interrupt");
-    x86_64_apic_send_eoi();
+    if (interrupt < 254) {
+        int irq = x86_64_ioapic_isr_to_irq(interrupt);
+        if (irq < 0)
+            panic("Unhandled interrupt");
+        x86_64_ioapic_enable_irq(irq, false);
+        x86_64_apic_send_eoi();
+        user_on_irq_receive(irq);
+    } else {
+        x86_64_apic_send_eoi();
+    }
     this_tls->user_context = ctx;
     schedule();
 }
@@ -81,18 +89,18 @@ interrupt_entry(u8 interrupt, struct Registers* ctx)
 void
 syscall_entry(struct Registers* ctx)
 {
-    klog("Syscall %zx %s: (%zx, %zx, %zx, %zx, %zx, %zx)\n",
-        CTX_SYS_OP(ctx), syscall_get_name(ctx),
-        CTX_SYS_A0(ctx), CTX_SYS_A1(ctx), CTX_SYS_A2(ctx),
-        CTX_SYS_A3(ctx), CTX_SYS_A4(ctx), CTX_SYS_A5(ctx)
-    );
+    // klog("Syscall %zx %s: (%zx, %zx, %zx, %zx, %zx, %zx)\n",
+    //     CTX_SYS_OP(ctx), syscall_get_name(ctx),
+    //     CTX_SYS_A0(ctx), CTX_SYS_A1(ctx), CTX_SYS_A2(ctx),
+    //     CTX_SYS_A3(ctx), CTX_SYS_A4(ctx), CTX_SYS_A5(ctx)
+    // );
     // print_registers(ctx);
     this_tls->user_context = ctx;
     CTX_SYS_R0(ctx) = syscall(ctx, this_tls->current_thread);
-    klog("Syscall response: %zx\n", CTX_SYS_R0(ctx));
-    isize errno = CTX_SYS_R0(ctx);
-    if (-1000 < errno && errno < 0)
-        klog("    errno = %zi\n", -errno);
+    // klog("Syscall response: %zx\n", CTX_SYS_R0(ctx));
+    // isize errno = CTX_SYS_R0(ctx);
+    // if (-1000 < errno && errno < 0)
+        // klog("    errno = %zi\n", -errno);
 
     // If thread has been scheduled away, syscall() should not return
     assert(this_tls->current_thread != nullptr);

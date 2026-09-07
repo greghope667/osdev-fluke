@@ -52,14 +52,48 @@ print_mem_regions()
     );
 }
 
+typedef unsigned short u16;
+typedef unsigned char u8;
+
+static inline void
+outb(u16 addr, u8 val)
+{
+    asm volatile ("outb\t%1, %0" : : "Nd"(addr), "a"(val));
+}
+
+static inline u8
+inb(u16 addr)
+{
+    u8 val;
+    asm volatile ("inb\t%1, %0" : "=a"(val) : "Nd"(addr));
+    return val;
+}
+
+void serial_setup()
+{
+    int fd = syscall6(SYSCALL_claim_irq, 4, 0, 0, 0, 0, 0);
+    const int port = 0x3f8;
+    outb(port + 1, 0); // Disable interrupts
+    outb(port + 4, 0xb); // IRQ, DTR, RTS
+    outb(port + 1, 1); // Interrupt on RX
+
+    for (int i=0; i<100; i++) {
+        syscall6(SYSCALL_objctl, fd, IRQ_CTL_ENABLE|IRQ_CTL_WAIT, 1'000'000'000, 0, 0, 0);
+        while (inb(port + 5) & 1) {
+            outb(port, inb(port));
+        }
+    }
+}
+
+
 int main()
 {
     for (int i=0; i<3; i++) {
         syscall6(SYSCALL_virtual_map, (0x60+i)<<12, 0x4000, PROT_READ|PROT_WRITE, 0, 0, 0);
         syscall6(SYSCALL_virtual_map, 0, 0x8000, PROT_READ|PROT_WRITE, 0, 0, 0);
     }
-    // *(int*)0x60000 = 0xaabbccdd;
-    // syscall6(SYSCALL_nsleep, 5'000'000'000, 0, 0, 0, 0, 0);
+
+    serial_setup();
 
     for (int i=0; i<3; i++)
         forth("0 x86_64_apic_measure_frequency ccall1");
@@ -67,6 +101,4 @@ int main()
     print_mem_regions();
 
     forth(": abort0 parse drop panic ccall1 ; abort0 abort from init");
-
-    *(volatile int*)0x1234567890 = 12;
 }

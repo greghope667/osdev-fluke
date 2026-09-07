@@ -18,6 +18,12 @@ Handle::seek(isize, int)
     return error_code(EPIPE);
 }
 
+result<usize>
+Handle::ctl(Context, unsigned)
+{
+    return error_code(EINVAL);
+}
+
 void
 Handle::release()
 {

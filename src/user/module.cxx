@@ -3,7 +3,7 @@
 #include "mem/memory.h"
 #include "fluke/seek.h"
 
-struct Module : Handle {
+struct Module final : Handle {
     const char* address;
     isize size;
     isize offset;
@@ -15,8 +15,8 @@ struct Module : Handle {
         assert(size > 0);
     }
 
-    result<isize> read(void* buffer, isize len) override;
-    result<isize> seek(isize offset, int whence) override;
+    result<isize> read(void* buffer, isize len) final;
+    result<isize> seek(isize offset, int whence) final;
     void close() final;
 };
 

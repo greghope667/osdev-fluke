@@ -12,7 +12,7 @@ struct Thread : Thread_context {
         u64 ns;
     } timeout;
 
-    struct Queue_node queue;
+    Queue_node queue;
 
     struct Process& get_process();
 };

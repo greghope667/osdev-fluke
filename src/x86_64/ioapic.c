@@ -1,7 +1,7 @@
 #include "apic.h"
 
 #include "klib.h"
-#include "x86_64/mmu.h"
+#include "mmu.h"
 
 static const physical_t IOAPIC_ADDRESS_P = { 0xfec0'0000 };
 static const usize IOAPIC_ADDRESS = 0xffff'ffff'fec0'0000;
@@ -63,6 +63,24 @@ ioapic_set_entry(int offset, u8 index, struct ioredtbl entry)
     *iowin = (u32)(entry_bits >> 32);
 }
 
+[[maybe_unused]] static struct ioredtbl
+ioapic_get_entry(int offset, u8 index)
+{
+    u64 entry_bits;
+
+    volatile u32* ioregsel = (volatile u32*)(IOAPIC_ADDRESS + offset);
+    volatile u32* iowin = (volatile u32*)(IOAPIC_ADDRESS + 0x10 + offset);
+
+    *ioregsel = IOAPIC_REDIRECT_TABLE + (index << 1);
+    entry_bits = *iowin;
+    *ioregsel = IOAPIC_REDIRECT_TABLE + (index << 1) + 1;
+    entry_bits |= ((u64)*iowin) << 32;
+
+    struct ioredtbl entry;
+    memcpy(&entry, &entry_bits, 8);
+    return entry;
+}
+
 void
 x86_64_ioapic_initialise()
 {
@@ -78,4 +96,29 @@ x86_64_ioapic_initialise()
         "x86_64_ioapic_initialise: id %x version %x\n",
         ioapic_read(0, IOAPIC_ID), ioapic_read(0, IOAPIC_VERSION)
     );
+}
+
+#define IRQ_OFFSET 32
+#define IRQ_COUNT 16
+
+int
+x86_64_ioapic_isr_to_irq(int isr)
+{
+    if (IRQ_OFFSET <= isr && isr < IRQ_OFFSET + IRQ_COUNT)
+        return isr - IRQ_OFFSET;
+    return -1;
+}
+
+void
+x86_64_ioapic_enable_irq(int irq, bool enable)
+{
+    if (irq < 0 || irq >= IRQ_COUNT)
+        panic("Unvalid irq");
+
+    struct ioredtbl entry = {
+        .interrupt_vector = irq + IRQ_OFFSET,
+        .delivery_mode = DELMOD_FIXED,
+        .masked = !enable,
+    };
+    ioapic_set_entry(0, irq, entry);
 }

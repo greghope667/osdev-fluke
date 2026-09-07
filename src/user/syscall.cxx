@@ -8,6 +8,7 @@
 #include "handle.hxx"
 #include "process.hxx"
 #include "share/share.h"
+#include "irq.h"
 
 #define SYSCALL(s) static result<usize> do_syscall_ ## s (Context ctx, [[maybe_unused]] Thread* thread)
 
@@ -66,14 +67,22 @@ SYSCALL(user_share)
     return (usize)user_share_get_objects();
 }
 
+SYSCALL(claim_irq)
+{
+    int fd = 0;
+    auto desc = TRY(descriptor_new(&thread->get_process().descriptors, &fd));
+    auto handle = TRY(irq_claim(CTX_SYS_A0(ctx)));
+    descriptor_assign(desc, handle);
+    return fd;
+}
+
 SYSCALL(read)
 {
     int fd = CTX_SYS_A0(ctx);
     auto buffer = (void*)CTX_SYS_A1(ctx);
     isize len = std::min<usize>(CTX_SYS_A2(ctx), ISIZE_MAX);
 
-    auto process = container_of(thread, Process, thread);
-    auto desc = TRY(descriptor_get(&process->descriptors, fd));
+    auto desc = TRY(descriptor_get(&thread->get_process().descriptors, fd));
     auto handle = desc->handle;
 
     TRY_ERRC(check_user_range(buffer, len));
@@ -84,10 +93,18 @@ SYSCALL(read)
 SYSCALL(seek)
 {
     int fd = CTX_SYS_A0(ctx);
-    auto process = container_of(thread, Process, thread);
-    auto desc = TRY(descriptor_get(&process->descriptors, fd));
+    auto desc = TRY(descriptor_get(&thread->get_process().descriptors, fd));
     auto handle = desc->handle;
     return TRY(handle->seek(CTX_SYS_A1(ctx), CTX_SYS_A2(ctx)));
+}
+
+SYSCALL(objctl)
+{
+    int fd = CTX_SYS_A0(ctx);
+    unsigned op = CTX_SYS_A1(ctx);
+    auto desc = TRY(descriptor_get(&thread->get_process().descriptors, fd));
+    auto handle = desc->handle;
+    return handle->ctl(ctx, op);
 }
 
 SYSCALL(virtual_map)
@@ -119,7 +136,7 @@ SYSCALL(virtual_map)
         addr = ROUND_DOWN_P2(addr, PAGE_SIZE);
         addr = (usize)TRY(process->vm.alloc_movable(addr, len, prot));
     }
-    process->vm.print();
+    // process->vm.print();
     return addr;
 }
 
@@ -136,7 +153,7 @@ SYSCALL(virtual_unmap)
 
     TRY(process->vm.free(addr, len));
 
-    process->vm.print();
+    // process->vm.print();
     return 0;
 }
 
@@ -158,8 +175,10 @@ static constexpr auto syscalls = []{
     ENTRY(nsleep);
     ENTRY(open_module);
     ENTRY(user_share);
+    ENTRY(claim_irq);
     ENTRY(read);
     ENTRY(seek);
+    ENTRY(objctl);
     ENTRY(virtual_map);
     ENTRY(virtual_unmap);
 

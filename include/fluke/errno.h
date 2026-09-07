@@ -12,3 +12,6 @@
 #define EEXIST                      10
 #define ENOEXEC                     11
 #define EPIPE                       12
+#define EBUSY                       13
+#define EAGAIN                      14
+#define EWOULDBLOCK                 EAGAIN

@@ -114,6 +114,21 @@ vm_clear_for_insert(VM& vm, usize address, usize end)
     return route;
 }
 
+static void
+merge_regions_after(VM_area* area)
+{
+    while (
+        area->next
+        && area->end == area->next->begin
+        && area->flags == area->next->flags
+    ) {
+        auto next = area->next;
+        area->end = next->end;
+        area->next = next->next;
+        kfree_t(next);
+    }
+}
+
 result<void>
 VM::free(usize address, isize length)
 {
@@ -278,6 +293,7 @@ VM::alloc_movable(usize hint, isize length, unsigned flags)
 
     region->next = new_area.release();
     first = vm_list_begin.next;
+    merge_regions_after(region);
 
     return (char*)address;
 }

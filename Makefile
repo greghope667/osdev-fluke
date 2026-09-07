@@ -5,12 +5,12 @@ MAKEFLAGS += --no-builtin-rules
 ### Customisation
 
 CC ?= gcc
-AS ?= gcc
+AS ?= as
 LD ?= ld
 
 CFLAGS ?= -Og -g3
 CXXFLAGS ?= -Og -g3
-ASMFLAGS ?= -g3
+ASMFLAGS ?= --gdwarf-5
 LIMINE_DATA ?= /usr/share/limine
 
 ### Build directories
@@ -66,7 +66,7 @@ build/%.o: %.cxx
 	$(CC) $(CXXFLAGS) -c $< -MMD -MF build/$*.d -o $@
 
 build/%.o: %.s
-	$(AS) -x assembler-with-cpp $(ASMFLAGS) -c $< -o $@
+	cpp -fworking-directory $< | $(AS) $(ASMFLAGS) -o $@
 
 bin/os.elf: $(OBJS) src/linker.ld
 	$(LD) $(LDFLAGS) $(OBJS) -T src/linker.ld -o $@

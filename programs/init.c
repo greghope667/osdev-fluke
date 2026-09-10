@@ -1,4 +1,4 @@
-#include "fluke/fluke.h"
+#include <fluke/fluke.h>
 
 asm (
     ".global    _start\n"
@@ -12,7 +12,7 @@ asm (
     ".popsection\n"
 );
 
-inline long
+static inline long
 syscall6(long rax, long a1, long a2, long a3, long a4, long a5, long a6)
 {
     register long r9 asm("r9") = a6;

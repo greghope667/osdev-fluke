@@ -76,6 +76,23 @@ SYSCALL(claim_irq)
     return fd;
 }
 
+SYSCALL(klog)
+{
+    char buffer[1024 + 1];
+    auto ptr = (void*)CTX_SYS_A0(ctx);
+    auto len = std::min<usize>(CTX_SYS_A1(ctx), sizeof(buffer)-1);
+    TRY_ERRC(copy_from_user(buffer, ptr, len));
+    buffer[len] = 0;
+    klog("%s", buffer);
+    return len;
+}
+
+SYSCALL(panic)
+{
+    (void)ctx;
+    panic("SYSCALL_panic called");
+}
+
 SYSCALL(read)
 {
     int fd = CTX_SYS_A0(ctx);
@@ -176,6 +193,8 @@ static constexpr auto syscalls = []{
     ENTRY(open_module);
     ENTRY(user_share);
     ENTRY(claim_irq);
+    ENTRY(klog);
+    ENTRY(panic);
     ENTRY(read);
     ENTRY(seek);
     ENTRY(objctl);
@@ -197,7 +216,7 @@ syscall(Context ctx, Thread_context* thread_ctx)
     if (handler == nullptr)
         return -ENOSYS;
 
-    auto result = handler(ctx, static_cast<Thread*>(thread_ctx));
+    auto result = handler(ctx, thread_cast(thread_ctx));
     return result ? result.value() : -result.err();
 }
 

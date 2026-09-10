@@ -8,6 +8,7 @@
 void
 cpu_context_initialise_user(struct Registers* context, usize code, usize stack)
 {
+    // TODO: push 0 to align stack/add return address?
     *context = (struct Registers) {
         .cs = GDT_USER64_CODE,
         .ss = GDT_USER_DATA,

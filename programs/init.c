@@ -55,6 +55,17 @@ print_mem_regions()
 typedef unsigned short u16;
 typedef unsigned char u8;
 
+static void
+print(const char* str)
+{
+    auto len = strlen(str);
+    while (len > 0) {
+        auto n = syscall6(SYSCALL_klog, (long)str, len, 0, 0, 0, 0);
+        len -= n;
+        str += n;
+    }
+}
+
 static inline void
 outb(u16 addr, u8 val)
 {
@@ -88,6 +99,8 @@ void serial_setup()
 
 int main()
 {
+    print("Hello from init process\n");
+
     for (int i=0; i<3; i++) {
         syscall6(SYSCALL_virtual_map, (0x60+i)<<12, 0x4000, PROT_READ|PROT_WRITE, 0, 0, 0);
         syscall6(SYSCALL_virtual_map, 0, 0x8000, PROT_READ|PROT_WRITE, 0, 0, 0);
@@ -100,5 +113,5 @@ int main()
 
     print_mem_regions();
 
-    forth(": abort0 parse drop panic ccall1 ; abort0 abort from init");
+    syscall6(SYSCALL_panic, 0, 0, 0, 0, 0, 0);
 }

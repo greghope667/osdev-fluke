@@ -12,7 +12,7 @@ schedule_ready(Thread_context* thread_ctx)
 {
     assert(thread_ctx->state == FLOATING);
     thread_ctx->state = READY;
-    queue_push(&run_queue, &static_cast<Thread*>(thread_ctx)->queue);
+    queue_push(&run_queue, &thread_cast(thread_ctx)->queue);
 }
 
 static Thread_context*
@@ -22,14 +22,14 @@ run_queue_pop()
     if (!node)
         return nullptr;
 
-    auto proc = container_of(node, Thread, queue);
-    assert(proc->state == READY);
-    proc->state = FLOATING;
-    return proc;
+    auto thread = thread_cast(node);
+    assert(thread->state == READY);
+    thread->state = FLOATING;
+    return thread;
 }
 
 static void
-set_timeout(Thread* __restrict__ thread, Thread** queue, u64 ns)
+set_timeout(Thread* __restrict__ thread, Thread** queue, isize ns)
 {
     assert(thread->timeout.prev == nullptr);
     assert(thread->timeout.next == nullptr);
@@ -50,9 +50,9 @@ set_timeout(Thread* __restrict__ thread, Thread** queue, u64 ns)
 }
 
 void
-schedule_nanosleep(Thread_context* thread_ctx, i64 wait_ns)
+schedule_nanosleep(Thread_context* thread_ctx, isize wait_ns)
 {
-    auto thread = static_cast<Thread*>(thread_ctx);
+    auto thread = thread_cast(thread_ctx);
 
     assert(thread->state == FLOATING);
     assert(!thread->queue.root);
@@ -63,18 +63,18 @@ schedule_nanosleep(Thread_context* thread_ctx, i64 wait_ns)
 }
 
 void
-schedule_queue_timeout(
+schedule_queue_with_timeout(
     Thread_context* thread_ctx,
     Queue* queue,
     i64 wait_ns,
-    usize timeout_return_value
+    error_code timeout_return_value
 ) {
-    auto thread = static_cast<Thread*>(thread_ctx);
+    auto thread = thread_cast(thread_ctx);
 
     assert(thread->state == FLOATING);
     assert(!thread->queue.root);
 
-    CTX_SYS_R0(&thread_ctx->ctx) = timeout_return_value;
+    CTX_SYS_R0(&thread_ctx->ctx) = -int(timeout_return_value);
     queue_push(queue, &thread->queue);
     thread->state = WAITING;
     assert(wait_ns > 0);
@@ -84,7 +84,7 @@ schedule_queue_timeout(
 void
 schedule_wake(Thread_context* thread_ctx, usize return_value)
 {
-    auto thread = static_cast<Thread*>(thread_ctx);
+    auto thread = thread_cast(thread_ctx);
 
     assert(thread->state == SLEEPING || thread->state == WAITING);
     assert(!thread->queue.root);
@@ -102,7 +102,7 @@ void
 schedule_wake_all(Queue* queue, usize return_value)
 {
     while (auto node = queue_pop(queue)) {
-        schedule_wake(container_of(node, Thread, queue), return_value);
+        schedule_wake(thread_cast(node), return_value);
     }
 }
 
@@ -140,17 +140,18 @@ wakeup_sleepers()
 void
 schedule()
 {
-    auto thread = get_tls_current_thread();
-    if (thread) {
-        cpu_context_save();
-        schedule_ready(thread);
-    }
-
     wakeup_sleepers();
 
-    thread = run_queue_pop();
-    if (thread)
-        cpu_context_restore_and_exit(thread);
+    auto thread = run_queue_pop();
+    if (not thread)
+        return;
+
+    if (auto running = get_tls_current_thread()) {
+        cpu_context_save();
+        schedule_ready(running);
+    }
+
+    cpu_context_restore_and_exit(thread);
 }
 
 void

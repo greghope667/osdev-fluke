@@ -17,6 +17,18 @@ struct Thread : Thread_context {
     struct Process& get_process();
 };
 
+static inline __attribute__((always_inline))
+Thread* thread_cast(Thread_context* ctx)
+{
+    return static_cast<Thread*>(ctx);
+}
+
+static inline __attribute__((always_inline))
+Thread* thread_cast(Queue_node* node)
+{
+    return container_of(node, Thread, queue);
+}
+
 struct Process {
     enum State {
         SPAWNING,

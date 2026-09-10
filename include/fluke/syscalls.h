@@ -6,6 +6,8 @@
 #define SYSCALL_open_module         0x1203
 #define SYSCALL_user_share          0x1204
 #define SYSCALL_claim_irq           0x1205
+#define SYSCALL_klog                0x1206
+#define SYSCALL_panic               0x1207
 #define SYSCALL_read                0x1210
 #define SYSCALL_seek                0x1212
 #define SYSCALL_objctl              0x121f

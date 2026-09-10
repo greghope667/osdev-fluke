@@ -55,7 +55,12 @@ IRQ_handle::ctl(Context ctx, unsigned op)
         if (timeout <= 0)
             return error_code(EAGAIN);
 
-        schedule_queue_timeout(cpu_context_save(), &waiting, timeout, -EAGAIN);
+        schedule_queue_with_timeout(
+            cpu_context_save(),
+            &waiting,
+            timeout,
+            error_code(EAGAIN)
+        );
         schedule_or_exit();
     }
 
@@ -71,7 +76,7 @@ user_on_irq_receive(int irq)
     auto& handle = handlers[irq];
 
     if (auto node = queue_pop(&handle.waiting)) {
-        auto thread = container_of(node, Thread, queue);
+        auto thread = thread_cast(node);
         schedule_wake(thread, 1);
     } else {
         handle.interrupt_occurred = true;

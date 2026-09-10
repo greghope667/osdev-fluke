@@ -31,7 +31,6 @@ FLAGS =\
 	-mgeneral-regs-only \
 	-mno-red-zone \
 	-mcmodel=kernel \
-	-fno-asynchronous-unwind-tables \
 	-fno-pie \
 	-fno-omit-frame-pointer \
 	-fno-stack-protector \

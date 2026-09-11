@@ -1,7 +1,7 @@
 #pragma once
 // IWYU pragma: always_keep
 #include "kdef.h" // IWYU pragma: export
-#include <fluke/errno.h> // IWYU pragma: export
+#include <fluke/defs/errno.h> // IWYU pragma: export
 
 /* Common kernel functions, mostly libc functions (or variants thereof) */
 

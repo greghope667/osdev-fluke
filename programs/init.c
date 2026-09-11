@@ -1,4 +1,4 @@
-#include <fluke/fluke.h>
+#include <fluke/defs/fluke.h>
 
 asm (
     ".global    _start\n"

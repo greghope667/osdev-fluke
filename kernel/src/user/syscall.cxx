@@ -1,5 +1,5 @@
 #include "syscall.h"
-#include "fluke/fluke.h"
+#include <fluke/defs/fluke.h>
 #include "forth/forth.h"
 #include "mem/memory.h"
 #include "schedule.h"

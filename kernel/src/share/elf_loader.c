@@ -11,7 +11,7 @@
 
 #include </usr/include/elf.h>
 #include "kdef.h"
-#include "fluke/fluke.h"
+#include <fluke/defs/fluke.h>
 
 #define UTEXT __attribute__((section(".usertext")))
 #define UCONST __attribute__((section(".userconst")))

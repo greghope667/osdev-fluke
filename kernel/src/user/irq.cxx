@@ -1,6 +1,6 @@
 #include "irq.h"
 #include "user/handle.hxx"
-#include "fluke/fluke.h"
+#include <fluke/defs/fluke.h>
 #include "process.hxx"
 #include "x86_64/apic.h"
 #include "schedule.h"

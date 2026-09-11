@@ -1,0 +1,84 @@
+diff '--color=auto' -rupN gcc-15.2.0/config.sub gcc/config.sub
+--- gcc-15.2.0/config.sub	2025-08-08 07:51:39.866337996 +0100
++++ gcc/config.sub	2026-09-11 17:10:21.408445503 +0100
+@@ -1749,6 +1749,7 @@ case $os in
+ 	     | onefs* | tirtos* | phoenix* | fuchsia* | redox* | bme* \
+ 	     | midnightbsd* | amdhsa* | unleashed* | emscripten* | wasi* \
+ 	     | nsk* | powerunix* | genode* | zvmoe* | qnx* | emx* | zephyr* \
++	     | fluke* \
+ 	     | fiwix* )
+ 		;;
+ 	# This one is extra strict with allowed versions
+diff '--color=auto' -rupN gcc-15.2.0/gcc/config/fluke.h gcc/gcc/config/fluke.h
+--- gcc-15.2.0/gcc/config/fluke.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc/gcc/config/fluke.h	2026-09-11 16:59:17.645014017 +0100
+@@ -0,0 +1,28 @@
++/* Useful if you wish to make target-specific GCC changes. */
++#undef TARGET_FLUKE
++#define TARGET_FLUKE 1
++
++// #undef LIB_SPEC
++// #define LIB_SPEC "-lc"
++//
++// #undef STARTFILE_SPEC
++// #define STARTFILE_SPEC "crt0.o%s crti.o%s crtbegin.o%s"
++//
++// #undef ENDFILE_SPEC
++// #define ENDFILE_SPEC "crtend.o%s crtn.o%s"
++
++// #undef LINK_SPEC
++// #define LINK_SPEC "%{shared:-shared} %{static:-static} %{!shared: %{!static: %{rdynamic:-export-dynamic}}}"
++// #undef LINK_SPEC
++// #define LINK_SPEC "-z max-page-size=4096"
++
++/* Additional predefined macros. */
++#undef TARGET_OS_CPP_BUILTINS
++#define TARGET_OS_CPP_BUILTINS()      \
++do {                                  \
++    builtin_define ("__fluke__");     \
++    builtin_define ("__unix__");      \
++    builtin_assert ("system=fluke");  \
++    builtin_assert ("system=unix");   \
++    builtin_assert ("system=posix");  \
++} while(0);
+diff '--color=auto' -rupN gcc-15.2.0/gcc/config.gcc gcc/gcc/config.gcc
+--- gcc-15.2.0/gcc/config.gcc	2025-08-08 07:51:40.435347488 +0100
++++ gcc/gcc/config.gcc	2026-09-11 16:18:43.414090862 +0100
+@@ -879,6 +879,13 @@ case ${target} in
+   rust_target_objs="${rust_target_objs} freebsd-rust.o"
+   target_has_targetrustm=yes
+   ;;
++*-*-fluke*)
++  extra_options="$extra_options gnu-user.opt"
++  gas=yes
++  gnu_ld=yes
++  default_use_cxa_atexit=yes
++  use_gcc_stdint=wrap
++  ;;
+ *-*-fuchsia*)
+   native_system_header_dir=/include
+   tmake_file="t-fuchsia"
+@@ -2320,6 +2327,9 @@ i[34567]86-*-mingw* | x86_64-*-mingw*)
+ 			;;
+ 	esac
+ 	;;
++x86_64-*-fluke*)
++	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h glibc-stdint.h i386/i386elf.h i386/x86-64.h fluke.h gnu-user.h"
++	;;
+ x86_64-*-fuchsia*)
+ 	tmake_file="${tmake_file} i386/t-x86_64-elf"
+ 	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h fuchsia.h"
+diff '--color=auto' -rupN gcc-15.2.0/libgcc/config.host gcc/libgcc/config.host
+--- gcc-15.2.0/libgcc/config.host	2025-08-08 07:51:44.833420855 +0100
++++ gcc/libgcc/config.host	2026-09-11 17:00:53.051586132 +0100
+@@ -764,6 +764,10 @@ x86_64-*-elf* | x86_64-*-rtems*)
+ 	    ;;
+ 	esac
+ 	;;
++x86_64-*-fluke*)
++	extra_parts="$extra_parts crti.o crtbegin.o crtend.o crtn.o"
++	tmake_file="$tmake_file i386/t-crtstuff t-crtstuff-pic t-libgcc-pic"
++	;;
+ x86_64-*-fuchsia*)
+ 	tmake_file="$tmake_file t-libgcc-pic"
+ 	;;

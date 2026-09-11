@@ -1,7 +1,7 @@
 #include "handle.hxx"
 #include "mem/alloc.hxx"
 #include "mem/memory.h"
-#include "fluke/seek.h"
+#include <fluke/defs/seek.h>
 
 struct Module final : Handle {
     const char* address;

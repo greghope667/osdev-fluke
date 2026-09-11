@@ -27,7 +27,7 @@ CFLAGS += \
 	-ffreestanding \
 	-fbuiltin
 
-isodir/boot/init: programs/init.c include/fluke/fluke.h | dirs
+isodir/boot/init: programs/init.c | dirs
 	$(CC) $(CFLAGS) -static -nostdlib $< -o $@
 
 isodir/boot/limine/%: $(LIMINE_DATA)/% | dirs

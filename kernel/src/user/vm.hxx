@@ -2,7 +2,7 @@
 
 #include "klib.hxx"
 #include "x86_64/mmu.h"
-#include "fluke/virtual.h" // IWYU pragma: export
+#include <fluke/defs/virtual.h>     // IWYU pragma: export
 
 struct VM {
     Page_map page_map;

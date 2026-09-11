@@ -15,3 +15,6 @@
 #define EBUSY                       13
 #define EAGAIN                      14
 #define EWOULDBLOCK                 EAGAIN
+#define EINTR                       15
+#define EDOM                        16
+#define ERANGE                      17

@@ -6,8 +6,6 @@
 	build-binutils build-gcc \
 	install-binutils install-gcc
 
-MAKEFLAGS += --no-builtin-rules
-
 GCC_VER ?= gcc-16.2.0
 BU_VER ?= binutils-2.47
 
@@ -23,8 +21,8 @@ $(BU_VER).tar.xz:
 download: $(GCC_VER).tar.xz $(BU_VER).tar.xz
 
 sysroot:
-	mkdir -p "$(SYSROOT)/include" "$(SYSROOT)/lib"
-	cp -RT --update ../include "$(SYSROOT)/include"
+	mkdir -p "$(SYSROOT)/usr/include" "$(SYSROOT)/usr/lib" "$(SYSROOT)/usr/bin"
+	cp -RT --update ../include "$(SYSROOT)/usr/include"
 
 extract-gcc:
 	tar xf $(GCC_VER).tar.xz
@@ -54,9 +52,14 @@ configure-gcc:
 		--with-sysroot="$(SYSROOT)" \
 		--disable-multilib \
 		--disable-nls \
-		--disable-ssp \
+		--disable-libssp \
+		--disable-libsanitizer \
+		--disable-libquadmath \
 		--disable-fixincludes \
-		--enable-languages=c \
+		--disable-libgomp \
+		--disable-gcov \
+		--disable-libstdcxx \
+		--enable-languages=c,c++ \
 		--disable-werror
 
 build-binutils:

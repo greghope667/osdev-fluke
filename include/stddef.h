@@ -8,6 +8,3 @@
 
 typedef __ptrdiff_t ptrdiff_t;
 typedef __size_t size_t;
-
-#define __NOTHROW __attribute__((__nothrow__))
-#define __NORETURN __attribute__((__noreturn__))

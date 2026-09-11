@@ -1,6 +1,11 @@
 #pragma once
 
+#include <fluke/types.h>
 #include <fluke/defs/errno.h>           // IWYU pragma: export
 
-extern int* __errno_location();
+#ifdef __cplusplus
+extern "C"
+#endif
+int* __errno_location() __CONST __NOTHROW;
+
 #define errno (*__errno_location())

@@ -5,7 +5,6 @@
 #include <fluke/defs/seek.h>            // IWYU pragma: export
 
 #include <stddef.h>                     // IWYU pragma: export
-#include <stdio.h>
 
 typedef struct FILE FILE;
 typedef __off_t off_t;

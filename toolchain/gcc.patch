@@ -1,6 +1,6 @@
-diff '--color=auto' -rupN gcc-15.2.0/config.sub gcc/config.sub
---- gcc-15.2.0/config.sub	2025-08-08 07:51:39.866337996 +0100
-+++ gcc/config.sub	2026-09-11 17:10:21.408445503 +0100
+diff '--color=auto' -rupN gcc-16.2.0/config.sub gcc/config.sub
+--- gcc-16.2.0/config.sub	2026-08-07 08:46:05.304676553 +0100
++++ gcc/config.sub	2026-09-11 20:15:51.280046225 +0100
 @@ -1749,6 +1749,7 @@ case $os in
  	     | onefs* | tirtos* | phoenix* | fuchsia* | redox* | bme* \
  	     | midnightbsd* | amdhsa* | unleashed* | emscripten* | wasi* \
@@ -9,9 +9,20 @@ diff '--color=auto' -rupN gcc-15.2.0/config.sub gcc/config.sub
  	     | fiwix* )
  		;;
  	# This one is extra strict with allowed versions
-diff '--color=auto' -rupN gcc-15.2.0/gcc/config/fluke.h gcc/gcc/config/fluke.h
---- gcc-15.2.0/gcc/config/fluke.h	1970-01-01 01:00:00.000000000 +0100
-+++ gcc/gcc/config/fluke.h	2026-09-11 16:59:17.645014017 +0100
+diff '--color=auto' -rupN gcc-16.2.0/fixincludes/mkfixinc.sh gcc/fixincludes/mkfixinc.sh
+--- gcc-16.2.0/fixincludes/mkfixinc.sh	2026-08-07 08:46:05.348677236 +0100
++++ gcc/fixincludes/mkfixinc.sh	2026-09-11 21:15:37.013089999 +0100
+@@ -19,6 +19,7 @@ case $machine in
+     powerpcle-*-eabisim* | \
+     powerpcle-*-eabi* | \
+     *-*-vxworks7* | \
++    *-fluke* | \
+     *-musl* )
+ 	#  IF there is no include fixing,
+ 	#  THEN create a no-op fixer and exit
+diff '--color=auto' -rupN gcc-16.2.0/gcc/config/fluke.h gcc/gcc/config/fluke.h
+--- gcc-16.2.0/gcc/config/fluke.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc/gcc/config/fluke.h	2026-09-11 20:15:51.280046225 +0100
 @@ -0,0 +1,28 @@
 +/* Useful if you wish to make target-specific GCC changes. */
 +#undef TARGET_FLUKE
@@ -41,10 +52,10 @@ diff '--color=auto' -rupN gcc-15.2.0/gcc/config/fluke.h gcc/gcc/config/fluke.h
 +    builtin_assert ("system=unix");   \
 +    builtin_assert ("system=posix");  \
 +} while(0);
-diff '--color=auto' -rupN gcc-15.2.0/gcc/config.gcc gcc/gcc/config.gcc
---- gcc-15.2.0/gcc/config.gcc	2025-08-08 07:51:40.435347488 +0100
-+++ gcc/gcc/config.gcc	2026-09-11 16:18:43.414090862 +0100
-@@ -879,6 +879,13 @@ case ${target} in
+diff '--color=auto' -rupN gcc-16.2.0/gcc/config.gcc gcc/gcc/config.gcc
+--- gcc-16.2.0/gcc/config.gcc	2026-08-07 08:46:05.819684556 +0100
++++ gcc/gcc/config.gcc	2026-09-11 23:26:18.681655667 +0100
+@@ -932,6 +932,13 @@ case ${target} in
    rust_target_objs="${rust_target_objs} freebsd-rust.o"
    target_has_targetrustm=yes
    ;;
@@ -53,12 +64,12 @@ diff '--color=auto' -rupN gcc-15.2.0/gcc/config.gcc gcc/gcc/config.gcc
 +  gas=yes
 +  gnu_ld=yes
 +  default_use_cxa_atexit=yes
-+  use_gcc_stdint=wrap
++  use_gcc_stdint=none
 +  ;;
  *-*-fuchsia*)
    native_system_header_dir=/include
    tmake_file="t-fuchsia"
-@@ -2320,6 +2327,9 @@ i[34567]86-*-mingw* | x86_64-*-mingw*)
+@@ -2373,6 +2380,9 @@ i[34567]86-*-mingw* | x86_64-*-mingw*)
  			;;
  	esac
  	;;
@@ -68,10 +79,10 @@ diff '--color=auto' -rupN gcc-15.2.0/gcc/config.gcc gcc/gcc/config.gcc
  x86_64-*-fuchsia*)
  	tmake_file="${tmake_file} i386/t-x86_64-elf"
  	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h fuchsia.h"
-diff '--color=auto' -rupN gcc-15.2.0/libgcc/config.host gcc/libgcc/config.host
---- gcc-15.2.0/libgcc/config.host	2025-08-08 07:51:44.833420855 +0100
-+++ gcc/libgcc/config.host	2026-09-11 17:00:53.051586132 +0100
-@@ -764,6 +764,10 @@ x86_64-*-elf* | x86_64-*-rtems*)
+diff '--color=auto' -rupN gcc-16.2.0/libgcc/config.host gcc/libgcc/config.host
+--- gcc-16.2.0/libgcc/config.host	2026-08-07 08:46:09.988749343 +0100
++++ gcc/libgcc/config.host	2026-09-11 20:15:51.280964656 +0100
+@@ -754,6 +754,10 @@ x86_64-*-elf* | x86_64-*-rtems*)
  	    ;;
  	esac
  	;;

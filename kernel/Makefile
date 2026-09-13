@@ -75,4 +75,5 @@ kernel.elf: $(OBJS) src/linker.ld
 build: kernel.elf
 
 clean:
+	rm -f kernel.elf
 	find build/src -type f -delete

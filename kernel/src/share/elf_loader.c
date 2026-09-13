@@ -27,7 +27,7 @@ asm (
 
 "trampoline:\n"
 "       xor     %ebp, %ebp\n"
-"       mov     %rsi, %rsp\n"
+"       mov     %rdx, %rsp\n"
 "       call    exec_elf_stage2\n"
 "       jmp     *%rax\n"
 
@@ -36,7 +36,12 @@ asm (
 "       .popsection\n"
 );
 
-extern void trampoline(int fd, long stack, Elf64_Ehdr* elf) __attribute__((noreturn));
+extern void trampoline(
+    int fd,
+    long stack_base,
+    void* stack_ptr,
+    Elf64_Ehdr* elf
+) __attribute__((noreturn));
 extern void* memcpy(void*, const void*, usize);
 extern void fail() __attribute__((noreturn));
 
@@ -177,8 +182,11 @@ user_share_exec_elf(int fd)
 
     // syscall(SYS_exec_flush_old)
     // stack_add_args()
+    long* stack_ptr = (long*)(stack_base + STACK_SIZE);
+    for (int i=0; i<4; i++)
+        *--stack_ptr = 0;
 
-    trampoline(fd, stack_base + STACK_SIZE, &elf);
+    trampoline(fd, stack_base, stack_ptr, &elf);
 }
 
 UTEXT static void
@@ -221,14 +229,16 @@ load_elf_segments(int fd, Elf64_Ehdr* elf)
  * jumps to the new address (elf entry point)
  */
 UTEXT long
-exec_elf_stage2(int fd, long stack, Elf64_Ehdr* elf_)
+exec_elf_stage2(int fd, long stack_base, void* stack_ptr, Elf64_Ehdr* elf_)
 {
+    (void)stack_ptr;
+
     Elf64_Ehdr elf;
     memcpy(&elf, elf_, sizeof(elf)); // Copy data before unmapping
 
-    const long stack_base = stack - STACK_SIZE;
+    const long stack_top = stack_base + STACK_SIZE;
     unmap(0, stack_base);
-    unmap(stack, 0x8000'0000'0000 - stack);
+    unmap(stack_top, 0x8000'0000'0000 - stack_top);
 
     load_elf_segments(fd, &elf);
 

@@ -1,6 +1,7 @@
 #pragma once
 // https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/string.h.html
 
+#include <fluke/types.h>
 #include <stddef.h>                     // IWYU pragma: export
 
 #ifdef __cplusplus
@@ -16,6 +17,7 @@ void*   memset(void* __s, int __ch, size_t __len) __NOTHROW;
 
 char*   strcat(char* __restrict __dst, const char* __restrict __src) __NOTHROW;
 char*   strchr(const char* __s, int ch) __NOTHROW;
+int     strcmp(const char*, const char*) __NOTHROW;
 char*   strcpy(char* __restrict __dst, const char* __restrict __src) __NOTHROW;
 size_t  strlen(const char* __str) __NOTHROW;
 

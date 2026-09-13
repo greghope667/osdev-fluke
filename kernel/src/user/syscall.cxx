@@ -84,6 +84,7 @@ SYSCALL(klog)
     TRY_ERRC(copy_from_user(buffer, ptr, len));
     buffer[len] = 0;
     klog("%s", buffer);
+    putchar('\n');
     return len;
 }
 

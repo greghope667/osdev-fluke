@@ -21,14 +21,8 @@ ISOFILES = \
 	isodir/boot/limine/limine-bios-cd.bin \
 	isodir/EFI/BOOT/BOOTX64.EFI \
 
-CFLAGS += \
-	-O \
-	-isystem include \
-	-ffreestanding \
-	-fbuiltin
-
 isodir/boot/init: programs/init.c | dirs
-	$(CC) $(CFLAGS) -static -nostdlib $< -o $@
+	$(CC) -O $< -o $@
 
 isodir/boot/limine/%: $(LIMINE_DATA)/% | dirs
 	cp $< $@

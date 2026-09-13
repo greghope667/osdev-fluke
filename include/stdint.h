@@ -32,6 +32,8 @@ typedef __uint32_t      uint_fast32_t;
 typedef __uint64_t      uint_fast64_t;
 */
 
+typedef __intptr_t          intptr_t;
+typedef __uintptr_t         uintptr_t;
 typedef __INTMAX_TYPE__     intmax_t;
 typedef __UINTMAX_TYPE__    uintmax_t;
 

@@ -14,3 +14,4 @@
 #define SYSCALL_virtual_map         0x1220
 #define SYSCALL_virtual_unmap       0x1221
 #define SYSCALL_virtual_protect     0x1222
+#define SYSCALL_process_exit        0x1230

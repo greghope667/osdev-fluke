@@ -54,7 +54,7 @@ static void panic()
 int main()
 {
     atexit(panic);
-    _fluke_klog("Hello from init process\n");
+    _fluke_klog("Hello from init process");
 
     for (int i=0; i<3; i++) {
         _fluke_virtual_map((void*)((0x60l+i)<<12), 0x4000, PROT_READ|PROT_WRITE, 0);

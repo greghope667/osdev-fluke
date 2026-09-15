@@ -1,63 +1,34 @@
-.PHONY: dirs all kernel iso run debug
+.PHONY: all clean kernel install-headers libc install-libc iso qemu-run
 .DEFAULT_GOAL := all
 
 ### Customisation
 
-LIMINE_DATA ?= /usr/share/limine
-
-### Build directories
-
-dirs:
-	mkdir -p bin isodir/boot/limine/ isodir/EFI/BOOT/
-
-### ISO build
-
-ISOFILES = \
-	isodir/boot/kernel.elf \
-	isodir/boot/init \
-	isodir/boot/limine/limine.conf \
-	isodir/boot/limine/limine-bios.sys \
-	isodir/boot/limine/limine-uefi-cd.bin \
-	isodir/boot/limine/limine-bios-cd.bin \
-	isodir/EFI/BOOT/BOOTX64.EFI \
-
-isodir/boot/init: programs/init.c | dirs
-	$(CC) -O $< -o $@
-
-isodir/boot/limine/%: $(LIMINE_DATA)/% | dirs
-	cp $< $@
-
-isodir/EFI/BOOT/%: $(LIMINE_DATA)/% | dirs
-	cp $< $@
-
-isodir/boot/limine/limine.conf: kernel/limine.conf | dirs
-	cp $< $@
-
-kernel/kernel.elf:
-	$(MAKE) $(MAKEFLAGS) -C kernel/ build
-
-isodir/boot/kernel.elf: kernel/kernel.elf | dirs
-	strip $< -o $@
-
-bin/os.iso: $(ISOFILES) | dirs
-	xorriso -as mkisofs -b boot/limine/limine-bios-cd.bin \
-		-no-emul-boot -boot-load-size 4 -boot-info-table \
-		--efi-boot boot/limine/limine-uefi-cd.bin \
-		-efi-boot-part --efi-boot-image --protective-msdos-label \
-		isodir -o $@
-	limine bios-install $@
+export SYSROOT ?= $(HOME)/opt/fluke-sysroot
 
 ### Named targets
 
-kernel: kernel/kernel.elf
-iso: bin/os.iso
-all: kernel iso
+all: kernel install-headers install-libc
 
-run: iso
-	qemu-system-x86_64 -serial stdio -cdrom bin/os.iso -no-reboot | tee log.txt
+clean:
+	make -C kernel clean
+	make -C system/libc clean
+	make -C iso clean
 
-debug: kernel iso
-	konsole -e qemu-system-x86_64 -serial stdio -cdrom bin/os.iso -s -S -d int &
-	@exec gdb kernel/kernel.elf -q \
-		-iex "set debuginfod enabled off" \
-		-ex "target remote localhost:1234"
+kernel:
+	$(MAKE) $(MAKEFLAGS) -C kernel
+
+install-headers:
+	mkdir -p "$(SYSROOT)/usr/include" "$(SYSROOT)/usr/lib" "$(SYSROOT)/usr/bin"
+	cp -R --update include "$(SYSROOT)/usr"
+
+libc: install-headers
+	$(MAKE) $(MAKEFLAGS) -C system/libc
+
+install-libc: libc
+	make -C system/libc install
+
+iso: all
+	make -C iso build
+
+qemu-run: all
+	make -C iso run

@@ -2,9 +2,7 @@
 **.d
 **.o
 **.elf
+
 build
 bin
-isodir
-log.txt
-
 notes

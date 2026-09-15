@@ -20,10 +20,6 @@ $(BU_VER).tar.xz:
 
 download: $(GCC_VER).tar.xz $(BU_VER).tar.xz
 
-sysroot:
-	mkdir -p "$(SYSROOT)/usr/include" "$(SYSROOT)/usr/lib" "$(SYSROOT)/usr/bin"
-	cp -RT --update ../include "$(SYSROOT)/usr/include"
-
 extract-gcc:
 	tar xf $(GCC_VER).tar.xz
 	mv $(GCC_VER) gcc

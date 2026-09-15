@@ -1,5 +1,5 @@
-.PHONY: dirs all clean
-.DEFAULT_GOAL := all
+.PHONY: dirs build install clean
+.DEFAULT_GOAL := build
 MAKEFLAGS += --no-builtin-rules
 
 ### Customisation
@@ -19,11 +19,8 @@ dirs:
 
 FLAGS += \
 	-Isrc \
-	-isystem ../../include \
 	-Wall \
-	-Wextra \
-	-ffreestanding \
-	-fbuiltin
+	-Wextra
 
 CFLAGS += $(FLAGS) -std=gnu23 -Wmissing-prototypes
 CXXFLAGS += $(FLAGS) -std=gnu++26 -fno-exceptions -fno-rtti -Wno-invalid-offsetof
@@ -56,8 +53,10 @@ crt1.o: crt/crt1.S
 
 ### Named targets
 
-all: crt1.o libc.a
+build: crt1.o libc.a
+
+install: build
+	cp -R --update crt1.o libc.a "$(SYSROOT)/usr/lib"
 
 clean:
-	rm -f crt1.o libc.a
-	rm -r build
+	rm -rf crt1.o libc.a build

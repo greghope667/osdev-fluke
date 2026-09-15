@@ -15,7 +15,7 @@ dirs:
 
 PROGRAMS = init
 
-ISOPROG = $(PROGRAMS:%=build/boot/%)
+ISOPROG = $(PROGRAMS:%=build/%)
 
 ISOFILES = \
 	$(ISOPROG) \
@@ -26,7 +26,7 @@ ISOFILES = \
 	build/boot/limine/limine-bios-cd.bin \
 	build/EFI/BOOT/BOOTX64.EFI \
 
-build/boot/%: ../programs/%.c | dirs
+build/%: ../programs/%.c | dirs
 	$(CC) -O $< -o $@
 
 build/boot/limine/%: $(LIMINE_DATA)/% | dirs

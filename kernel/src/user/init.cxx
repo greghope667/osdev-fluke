@@ -6,8 +6,6 @@
 
 extern "C" char user_share_exec_elf[];
 
-static const char boot_module[] = "/boot/init";
-
 static result<void>
 try_user_init()
 {
@@ -21,9 +19,12 @@ try_user_init()
     auto desc = TRY(descriptor_new(&proc->descriptors, &fd));
     CTX_SYS_A0(&proc->thread.ctx) = fd;
 
-    auto handle = bootloader_open_module(boot_module, sizeof(boot_module)-1);
+    auto cmdline = bootloader_cmdline();
+    klog("Loading init program from module: %s\n", cmdline);
+
+    auto handle = bootloader_open_module(cmdline, strlen(cmdline));
     if (not handle)
-        panic("Init module /boot/init not found");
+        panic("Init program not found");
     descriptor_assign(desc, handle);
 
     proc->state = Process::ACTIVE;

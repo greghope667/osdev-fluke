@@ -50,6 +50,12 @@ limine_module_request = {
     .revision = 0,
 };
 
+const volatile struct limine_executable_cmdline_request
+limine_cmdline_request = {
+    .id = LIMINE_EXECUTABLE_CMDLINE_REQUEST_ID,
+    .revision = 0,
+};
+
 void
 bootloader_init_display()
 {
@@ -119,6 +125,14 @@ bootloader_run_setup()
     }
 
     {
+        auto response = limine_cmdline_request.response;
+        if (!response)
+            panic("no cmdline response");
+
+        klog("cmdline: %s\n", response->cmdline);
+    }
+
+    {
         auto response = limine_module_request.response;
         if (!response)
             panic("no module response");
@@ -156,4 +170,10 @@ bootloader_open_module(const char* path, usize path_len)
         }
     }
     return nullptr;
+}
+
+const char*
+bootloader_cmdline()
+{
+    return limine_cmdline_request.response->cmdline;
 }

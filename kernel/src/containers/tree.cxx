@@ -5,8 +5,8 @@
 // typedef struct Tree_node Node;
 // typedef struct Tree Tree;
 using Node = Tree::Node;
-constexpr bool DIR_LEFT = false;
-constexpr bool DIR_RIGHT = true;
+#define DIR_LEFT false
+#define DIR_RIGHT true
 
 static int
 rng()

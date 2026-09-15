@@ -46,7 +46,15 @@ exception_kernel_entry(u8 exception, struct Registers* ctx)
     if (exception == 14) {
         usize cr2;
         asm ("mov   %%cr2, %0" : "=r"(cr2));
-        printf("Page fault address: %zx\n", cr2);
+        printf("Page fault\n    address %zx ", cr2);
+        auto err = ctx->error_code;
+        printf(
+            "%s %s %s %s\n",
+            err & (1 << 0) ? "protection" : "not-present",
+            err & (1 << 1) ? "write" : "read",
+            err & (1 << 2) ? "user" : "supervisor",
+            err & (1 << 4) ? "instruction" : "data"
+        );
     }
     print_registers(ctx);
     show_backtrace((void*)ctx->rbp);

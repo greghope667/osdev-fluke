@@ -22,6 +22,7 @@ void*   _fluke_virtual_map(void* address, size_t len, int prot, int flags) __NOT
 int     _fluke_irq_claim(int irq) __NOTHROW;
 int     _fluke_irq_ack_wait(int irqd, long wait_ns) __NOTHROW;
 void    _fluke_panic(const char* reason) __NORETURN;
+int     _fluke_thread_spawn(void (*function)(long), void* stack, long arg) __NOTHROW;
 
 #ifdef __cplusplus
 } // extern C

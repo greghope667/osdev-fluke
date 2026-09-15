@@ -53,7 +53,12 @@ struct Thread_context {
 #define CTX_SYS_R1(ctx) ((ctx)->rdx)
 #define CTX_SYS_PC(ctx) ((ctx)->rip)
 
-void cpu_context_initialise_user(Context context, usize code, usize stack);
+error_code cpu_context_initialise_user(
+    struct Thread_context* context,
+    physical_t page_map_top,
+    usize code,
+    void* stack_top
+);
 struct Thread_context* cpu_context_save();
 void cpu_context_restore_and_exit(struct Thread_context* process) __attribute__((noreturn));
 void cpu_exit_idle() __attribute__((noreturn));

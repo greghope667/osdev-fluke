@@ -30,17 +30,26 @@ inb(u16 addr)
     return val;
 }
 
+const int port = 0x3f8;
+static int irqd;
+
 void serial_setup()
 {
-    int irqd = _fluke_irq_claim(4);
-    const int port = 0x3f8;
+    irqd = _fluke_irq_claim(4);
     outb(port + 1, 0); // Disable interrupts
     outb(port + 4, 0xb); // IRQ, DTR, RTS
     outb(port + 1, 1); // Interrupt on RX
+}
 
-    for (int i=0; i<100; i++) {
-        _fluke_irq_ack_wait(irqd, 1'000'000'000);
+void
+serial_ping(long ctx)
+{
+    int limit = (int)ctx;
+    char id = ctx >> 32;
+    for (int i=0; i<limit; i++) {
+        _fluke_irq_ack_wait(irqd, 4'000'000'000);
         while (inb(port + 5) & 1) {
+            outb(port, id);
             outb(port, inb(port));
         }
     }
@@ -56,12 +65,15 @@ int main()
     atexit(panic);
     _fluke_klog("Hello from init process");
 
+    serial_setup();
+
     for (int i=0; i<3; i++) {
-        _fluke_virtual_map((void*)((0x60l+i)<<12), 0x4000, PROT_READ|PROT_WRITE, 0);
-        _fluke_virtual_map(nullptr, 0x4000, PROT_READ|PROT_WRITE, 0);
+        long ctx = (((long)'a' + i) << 32) + 100;
+        auto stack = _fluke_virtual_map(nullptr, 0x4000, PROT_READ|PROT_WRITE, 0);
+        _fluke_thread_spawn(serial_ping, stack + 0x4000, ctx);
     }
 
-    serial_setup();
+    serial_ping((((long)'r') << 32) + 10);
 
     for (int i=0; i<3; i++)
         _fluke_forth_interpret("0 x86_64_apic_measure_frequency ccall1");

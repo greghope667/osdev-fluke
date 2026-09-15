@@ -12,6 +12,12 @@ copy_to_user(void* dest, const void* src, isize size)
 }
 
 error_code
+copy_to_user8(void* dest, uint64_t value)
+{
+    return copy_to_user(dest, &value, sizeof(value));
+}
+
+error_code
 copy_from_user(void* dest, const void* src, isize size)
 {
     TRY_ERRC(check_user_range(src, size));

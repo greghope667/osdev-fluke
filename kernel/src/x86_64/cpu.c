@@ -5,17 +5,25 @@
 #include "mmu.h"
 #include "tls.h"
 
-void
-cpu_context_initialise_user(struct Registers* context, usize code, usize stack)
-{
-    // TODO: push 0 to align stack/add return address?
-    *context = (struct Registers) {
+error_code
+cpu_context_initialise_user(
+    struct Thread_context* context,
+    physical_t page_map_top,
+    usize code,
+    void* stack
+) {
+    context->state = FLOATING;
+    context->page_map_top = page_map_top;
+
+    context->ctx = (struct Registers) {
         .cs = GDT_USER64_CODE,
         .ss = GDT_USER_DATA,
         .rflags = 0x3202, // IOPL=3, IF set
         .rip = code,
-        .rsp = stack,
+        .rsp = (uintptr_t)stack,
     };
+
+    return 0;
 }
 
 struct Thread_context*

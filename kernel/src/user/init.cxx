@@ -13,11 +13,10 @@ try_user_init()
 
     auto stack = TRY(proc->vm.alloc_movable(0, PAGE_SIZE, PROT_READ|PROT_WRITE));
     auto func = (usize)user_share_exec_elf;
-    cpu_context_initialise_user(&proc->thread.ctx, func, (usize)stack + PAGE_SIZE);
 
     int fd;
     auto desc = TRY(descriptor_new(&proc->descriptors, &fd));
-    CTX_SYS_A0(&proc->thread.ctx) = fd;
+    auto thread = TRY(proc->spawn_thread(func, (usize)stack + PAGE_SIZE, fd));
 
     auto cmdline = bootloader_cmdline();
     klog("Loading init program from module: %s\n", cmdline);
@@ -28,7 +27,7 @@ try_user_init()
     descriptor_assign(desc, handle);
 
     proc->state = Process::ACTIVE;
-    schedule_ready(&proc->thread);
+    schedule_ready(thread);
 
     return {};
 }

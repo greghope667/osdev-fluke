@@ -28,6 +28,7 @@ inline bool
 is_page_aligned(usize a) { return (a & (PAGE_SIZE-1)) == 0; }
 
 error_code copy_to_user(void* dest, const void* src, isize size);
+error_code copy_to_user8(void* dest, uint64_t value);
 error_code copy_from_user(void* dest, const void* src, isize size);
 error_code check_user_range(const void* v, isize len);
 

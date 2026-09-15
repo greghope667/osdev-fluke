@@ -10,7 +10,7 @@
 #include "share/share.h"
 #include "irq.h"
 
-#define SYSCALL(s) static result<usize> do_syscall_ ## s (Context ctx, [[maybe_unused]] Thread* thread)
+#define SYSCALL(s) static result<usize> do_syscall_ ## s (Context ctx, [[maybe_unused]] Process& process)
 
 SYSCALL(nop)
 {
@@ -43,8 +43,7 @@ SYSCALL(nsleep)
 SYSCALL(open_module)
 {
     int fd = 0;
-    auto process = container_of(thread, Process, thread);
-    auto desc = TRY(descriptor_new(&process->descriptors, &fd));
+    auto desc = TRY(descriptor_new(&process.descriptors, &fd));
 
     char path[128];
     usize len = CTX_SYS_A1(ctx);
@@ -70,7 +69,7 @@ SYSCALL(user_share)
 SYSCALL(claim_irq)
 {
     int fd = 0;
-    auto desc = TRY(descriptor_new(&thread->get_process().descriptors, &fd));
+    auto desc = TRY(descriptor_new(&process.descriptors, &fd));
     auto handle = TRY(irq_claim(CTX_SYS_A0(ctx)));
     descriptor_assign(desc, handle);
     return fd;
@@ -100,7 +99,7 @@ SYSCALL(read)
     auto buffer = (void*)CTX_SYS_A1(ctx);
     isize len = std::min<usize>(CTX_SYS_A2(ctx), ISIZE_MAX);
 
-    auto desc = TRY(descriptor_get(&thread->get_process().descriptors, fd));
+    auto desc = TRY(descriptor_get(&process.descriptors, fd));
     auto handle = desc->handle;
 
     TRY_ERRC(check_user_range(buffer, len));
@@ -111,7 +110,7 @@ SYSCALL(read)
 SYSCALL(seek)
 {
     int fd = CTX_SYS_A0(ctx);
-    auto desc = TRY(descriptor_get(&thread->get_process().descriptors, fd));
+    auto desc = TRY(descriptor_get(&process.descriptors, fd));
     auto handle = desc->handle;
     return TRY(handle->seek(CTX_SYS_A1(ctx), CTX_SYS_A2(ctx)));
 }
@@ -120,15 +119,13 @@ SYSCALL(objctl)
 {
     int fd = CTX_SYS_A0(ctx);
     unsigned op = CTX_SYS_A1(ctx);
-    auto desc = TRY(descriptor_get(&thread->get_process().descriptors, fd));
+    auto desc = TRY(descriptor_get(&process.descriptors, fd));
     auto handle = desc->handle;
     return handle->ctl(ctx, op);
 }
 
 SYSCALL(virtual_map)
 {
-    auto process = container_of(thread, Process, thread);
-
     isize len = CTX_SYS_A1(ctx);
     len = ROUND_UP_P2(len, PAGE_SIZE);
     usize addr = CTX_SYS_A0(ctx);
@@ -147,12 +144,12 @@ SYSCALL(virtual_map)
             return error_code(EINVAL);
 
         if (flags & MAP_FIXED)
-            TRY(process->vm.alloc_fixed_overwrite(addr, len, prot));
+            TRY(process.vm.alloc_fixed_overwrite(addr, len, prot));
         else
-            TRY(process->vm.alloc_fixed_noreplace(addr, len, prot));
+            TRY(process.vm.alloc_fixed_noreplace(addr, len, prot));
     } else {
         addr = ROUND_DOWN_P2(addr, PAGE_SIZE);
-        addr = (usize)TRY(process->vm.alloc_movable(addr, len, prot));
+        addr = (usize)TRY(process.vm.alloc_movable(addr, len, prot));
     }
     // process->vm.print();
     return addr;
@@ -160,8 +157,6 @@ SYSCALL(virtual_map)
 
 SYSCALL(virtual_unmap)
 {
-    auto process = container_of(thread, Process, thread);
-
     isize len = CTX_SYS_A1(ctx);
     len = ROUND_UP_P2(len, PAGE_SIZE);
     usize addr = CTX_SYS_A0(ctx);
@@ -169,19 +164,27 @@ SYSCALL(virtual_unmap)
         return error_code(EINVAL);
     TRY_ERRC(check_user_range((void*)addr, len));
 
-    TRY(process->vm.free(addr, len));
+    TRY(process.vm.free(addr, len));
 
     // process->vm.print();
     return 0;
 }
 
+SYSCALL(thread_spawn)
+{
+    usize code = CTX_SYS_A0(ctx), stack = CTX_SYS_A1(ctx), arg = CTX_SYS_A2(ctx);
+    auto thread = TRY(process.spawn_thread(code, stack, arg));
+    schedule_ready(thread);
+    return 0;
+}
+
 struct syscall_table_entry {
-    result<usize> (*handler)(Context ctx, Thread*);
+    result<usize> (*handler)(Context ctx, Process&);
     const char* name;
 };
 
 static constexpr auto syscalls = []{
-    constexpr auto N = SYSCALL_virtual_unmap - SYSCALL_nop + 1;
+    constexpr auto N = SYSCALL_thread_spawn - SYSCALL_nop + 1;
     std::array<syscall_table_entry, N> table = {};
 
 #define ENTRY(s) \
@@ -201,6 +204,7 @@ static constexpr auto syscalls = []{
     ENTRY(objctl);
     ENTRY(virtual_map);
     ENTRY(virtual_unmap);
+    ENTRY(thread_spawn);
 
     return table;
 }();
@@ -217,7 +221,7 @@ syscall(Context ctx, Thread_context* thread_ctx)
     if (handler == nullptr)
         return -ENOSYS;
 
-    auto result = handler(ctx, thread_cast(thread_ctx));
+    auto result = handler(ctx, thread_cast(thread_ctx)->get_process());
     return result ? result.value() : -result.err();
 }
 

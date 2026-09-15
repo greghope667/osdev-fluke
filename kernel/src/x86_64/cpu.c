@@ -1,9 +1,67 @@
 #include "cpu.h"
+#include "mem/alloc.h"
 #include "msr.h"
 #include "klib.h"
 #include "offsets.h"
 #include "mmu.h"
 #include "tls.h"
+#include "cr.h"
+
+struct FXSave_region {
+    u16 fcw;
+    u16 fsw;
+    u8 ftw;
+    u8 _rsvd_hdr;
+    u16 fop;
+    u64 ip;
+    u64 dp;
+    u32 mxcsr;
+    u32 mxcsr_mask;
+    u128 st_mm_regs[8];
+    u128 xmm_regs[16];
+    u128 _rsvd[6];
+} __attribute__((aligned(16)));
+
+_Static_assert(sizeof(struct FXSave_region) == 512);
+
+static void*
+fpu_alloc()
+{
+    struct FXSave_region* fpu = kalloc(sizeof(*fpu));
+    if (fpu)
+        *fpu = (struct FXSave_region){
+            // Double precision, round to nearest, all exceptions masked
+            .fcw    = 0x033f,
+            // Round nearest, no zero flush, all exceptions masked
+            .mxcsr  = 0x00001f80,
+        };
+    return fpu;
+}
+
+static inline void
+fpu_save(void* fpu)
+{
+    asm volatile ("fxsave64 %0" : : "m"(*(struct FXSave_region*)fpu));
+}
+
+static inline void
+fpu_load(void* fpu)
+{
+    asm volatile ("fxrstor64 %0" : : "m"(*(struct FXSave_region*)fpu));
+}
+
+void
+x86_64_fpu_initialise()
+{
+    auto cr0 = read_CR(0);
+    cr0 &= ~CR0_EM;         // Disable emulation
+    cr0 |= CR0_MP;          // Enable monitoring
+    write_CR(0, cr0);
+
+    auto cr4 = read_CR(4);
+    cr4 |= CR4_OSFXSR;      // Enable fxsave, fxrstor, sse
+    write_CR(4, cr4);
+}
 
 error_code
 cpu_context_initialise_user(
@@ -23,6 +81,8 @@ cpu_context_initialise_user(
         .rsp = (uintptr_t)stack,
     };
 
+    context->fpu_state = TRY_ALLOC(fpu_alloc());
+
     return 0;
 }
 
@@ -37,6 +97,7 @@ cpu_context_save()
 
     thread->ctx = *context;
     thread->state = FLOATING;
+    fpu_save(thread->fpu_state);
 
     this_tls->current_thread = nullptr;
     return thread;
@@ -54,6 +115,7 @@ cpu_context_restore_and_exit(struct Thread_context* thread)
     wrmsr(MSR_KERNEL_GS_BASE, 0);
     wrmsr(MSR_FS_BASE, 0);
     mmu_set_address_space((struct Page_map){ thread->page_map_top });
+    fpu_load(thread->fpu_state);
 
     this_tls->current_thread = thread;
     thread->state = RUNNING;

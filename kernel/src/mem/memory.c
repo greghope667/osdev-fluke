@@ -12,7 +12,7 @@ copy_to_user(void* dest, const void* src, isize size)
 }
 
 error_code
-copy_to_user8(void* dest, uint64_t value)
+copy_to_user8(void* dest, u64 value)
 {
     return copy_to_user(dest, &value, sizeof(value));
 }

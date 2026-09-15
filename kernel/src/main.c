@@ -8,6 +8,7 @@
 #include "user/init.h"
 #include "user/schedule.h"
 #include "x86_64/apic.h"
+#include "x86_64/cpu.h"
 #include "x86_64/mmu.h"
 #include "x86_64/time.h"
 #include "x86_64/descriptors.h"
@@ -55,6 +56,7 @@ void _main(void* stack) {
 
     x86_64_load_descriptors((usize)stack);
     x86_64_cpu_create_tls(0, (usize)stack);
+    x86_64_fpu_initialise();
 
     mmu_configure_root_address_space();
     user_share_init();

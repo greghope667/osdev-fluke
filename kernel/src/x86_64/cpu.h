@@ -40,6 +40,7 @@ struct Thread_context {
     physical_t page_map_top;
     struct Registers ctx;
     enum thread_state state;
+    void* fpu_state;
 };
 
 #define CTX_SYS_OP(ctx) ((ctx)->rax)
@@ -62,6 +63,8 @@ error_code cpu_context_initialise_user(
 struct Thread_context* cpu_context_save();
 void cpu_context_restore_and_exit(struct Thread_context* process) __attribute__((noreturn));
 void cpu_exit_idle() __attribute__((noreturn));
+
+void x86_64_fpu_initialise();
 
 #ifdef __cplusplus
 } // extern C

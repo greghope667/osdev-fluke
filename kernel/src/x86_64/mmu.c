@@ -2,6 +2,7 @@
 #include "mem/alloc.h"
 #include "klib.h"
 #include "mem/memory.h"
+#include "cr.h"
 
 static void* mmu_alloc_page()
 {
@@ -13,22 +14,23 @@ static void* mmu_alloc_page()
 void
 mmu_set_address_space(struct Page_map pm)
 {
-    asm volatile("mov %0, %%cr3" : : "r"(pm.top_address.address));
+    write_CR(3, pm.top_address.address);
+    asm volatile ("" : : : "memory");
 }
 
 struct Page_map
 mmu_get_address_space()
 {
-    struct Page_map pm;
-    asm ("mov %%cr3, %0" : "=r"(pm.top_address.address));
-    return pm;
+    return (struct Page_map){
+        .top_address = { read_CR(3) }
+    };
 }
 
 void
 mmu_reload_address_space()
 {
-    usize scratch;
-    asm volatile ("mov %%cr3, %0\nmov %0, %%cr3" : "=r"(scratch));
+    write_CR(3, read_CR(3));
+    asm volatile ("" : : : "memory");
 }
 
 error_code

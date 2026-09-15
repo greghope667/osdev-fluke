@@ -43,10 +43,10 @@ void alloc_print_info();
     ptr;                                                             \
 })
 
-#define TRY_ALLOC(expr) ({                  \
-    auto* __p = (expr);                     \
-    if (! __p) return error_code(ENOMEM);   \
-    __p;                                    \
+#define TRY_ALLOC(expr) ({                          \
+    auto __p = (expr);                              \
+    if (! __p) return (enum error_code)(ENOMEM);    \
+    __p;                                            \
 })
 
 #ifdef __cplusplus

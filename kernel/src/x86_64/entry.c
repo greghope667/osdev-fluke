@@ -7,6 +7,7 @@
 #include "cpu.h"
 #include "symbols.h"
 #include "tls.h"
+#include "cr.h"
 
 static void
 print_registers(struct Registers* ctx)
@@ -44,9 +45,7 @@ exception_kernel_entry(u8 exception, struct Registers* ctx)
     console_setcolor(COLOR_BRIGHT_RED, COLOR_BLACK);
     klog("Exception\nExn %u  error 0x%zx  cs %zu  ss %zu:\n", exception, ctx->error_code, ctx->cs, ctx->ss);
     if (exception == 14) {
-        usize cr2;
-        asm ("mov   %%cr2, %0" : "=r"(cr2));
-        printf("Page fault\n    address %zx ", cr2);
+        printf("Page fault\n    address %zx ", read_CR(2));
         auto err = ctx->error_code;
         printf(
             "%s %s %s %s\n",

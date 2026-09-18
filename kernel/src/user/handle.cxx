@@ -1,5 +1,7 @@
 #include "handle.hxx"
 
+#include "x86_64/cpu.h"
+
 result<isize>
 Handle::read(void*, isize)
 {
@@ -15,11 +17,17 @@ Handle::write(const void*, isize)
 result<isize>
 Handle::seek(isize, int)
 {
-    return error_code(EPIPE);
+    return error_code(ESPIPE);
 }
 
 result<usize>
 Handle::ctl(Context, unsigned)
+{
+    return error_code(EINVAL);
+}
+
+error_code
+Handle::ipc_call(Context)
 {
     return error_code(EINVAL);
 }

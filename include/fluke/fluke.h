@@ -16,13 +16,34 @@
 extern "C" {
 #endif
 
-long    _fluke_forth_interpret(const char*) __NOTHROW;
-void    _fluke_klog(const char*) __NOTHROW;
-void*   _fluke_virtual_map(void* address, size_t len, int prot, int flags) __NOTHROW;
-int     _fluke_irq_claim(int irq) __NOTHROW;
-int     _fluke_irq_ack_wait(int irqd, long wait_ns) __NOTHROW;
+struct _fluke_lpair { long first; long second; };
+struct _fluke_ipair { int  first; long second; };
+
+long    _fluke_forth_interpret(const char*);
+void    _fluke_klog(const char*);
+void*   _fluke_virtual_map(void* address, size_t len, int prot, int flags);
+int     _fluke_irq_claim(int irq);
+int     _fluke_irq_ack_wait(int irqd, long wait_ns);
 void    _fluke_panic(const char* reason) __NORETURN;
-int     _fluke_thread_spawn(void (*function)(long), void* stack, long arg) __NOTHROW;
+int     _fluke_thread_spawn(void (*function)(long), void* stack, long arg);
+void    _fluke_nsleep(long nanoseconds);
+
+typedef int (*_fluke_ipc_callback)(
+    long handle, long aptr, long alen,
+    int mode, long ax1, long ax2
+);
+
+struct _fluke_ipair
+        _fluke_ipc_create(signed char transfer_map[], unsigned ntransfer_map);
+
+struct _fluke_lpair
+        _fluke_ipc_call(int fd, long aptr, long alen, int mode, ...);
+
+int     _fluke_ipc_listen(
+            long handle, long aptr, long alen, int channel,
+            _fluke_ipc_callback callback);
+
+int     _fluke_ipc_respond(long status, long aptr, long alen, int mode);
 
 #ifdef __cplusplus
 } // extern C

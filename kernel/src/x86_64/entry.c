@@ -1,3 +1,4 @@
+#include "mem/memory.h"
 #include "print/console.h"
 #include "klib.h"
 #include "user/irq.h"
@@ -39,9 +40,28 @@ print_registers(struct Registers* ctx)
     );
 }
 
+extern char __memcpy_catch_fault_op[];
+extern char __memcpy_catch_fault_err[];
+
 void
 exception_kernel_entry(u8 exception, struct Registers* ctx)
 {
+    if (exception == 14 && ctx->rip == (usize)__memcpy_catch_fault_op) {
+        int err = ctx->error_code;
+        if ((err & 0b10100) == 0b00000) {
+            // error is data, supervisor
+            int throw = err & 0b10 ? MEMCPY_FAULT_WRITE : MEMCPY_FAULT_READ;
+            int catch = ctx->rax;
+
+            if ((throw & catch) == throw) {
+                klog("Caught memcpy fault %x\n", throw);
+                ctx->rax = throw;
+                ctx->rip = (usize)__memcpy_catch_fault_err;
+                return;
+            }
+        }
+    }
+
     console_setcolor(COLOR_BRIGHT_RED, COLOR_BLACK);
     klog("Exception\nExn %u  error 0x%zx  cs %zu  ss %zu:\n", exception, ctx->error_code, ctx->cs, ctx->ss);
     if (exception == 14) {

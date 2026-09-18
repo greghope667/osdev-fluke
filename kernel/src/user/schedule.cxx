@@ -7,6 +7,15 @@
 static Queue run_queue;
 static Thread* sleep_queue;
 
+[[maybe_unused]] static void
+print_sleep_queue(const char* from)
+{
+    printf("%s %s %zu\n", from, __PRETTY_FUNCTION__, nanoseconds() / 1'000'000);
+    for (auto thread = sleep_queue; thread; thread = thread->timeout.next) {
+        printf("    %p %zu\n", thread, thread->timeout.ns / 1'000'000);
+    }
+}
+
 void
 schedule_ready(Thread_context* thread_ctx)
 {
@@ -69,15 +78,10 @@ schedule_queue_with_timeout(
     i64 wait_ns,
     error_code timeout_return_value
 ) {
-    auto thread = thread_cast(thread_ctx);
-
-    assert(thread->state == FLOATING);
-    assert(!thread->queue.root);
-
-    CTX_SYS_R0(&thread_ctx->ctx) = -int(timeout_return_value);
-    queue_push(queue, &thread->queue);
-    thread->state = WAITING;
     assert(wait_ns > 0);
+    CTX_SYS_R0(&thread_ctx->ctx) = -int(timeout_return_value);
+    auto thread = thread_cast(thread_ctx);
+    thread->push_into(queue);
     set_timeout(thread, &sleep_queue, wait_ns);
 }
 
@@ -91,10 +95,7 @@ schedule_wake(Thread_context* thread_ctx, usize return_value)
 
     thread->state = FLOATING;
     CTX_SYS_R0(&thread->ctx) = return_value;
-    if (thread->timeout.prev) {
-        *thread->timeout.prev = thread->timeout.next;
-        thread->timeout = {};
-    }
+    thread->timeout.cancel();
     schedule_ready(thread);
 }
 
@@ -115,7 +116,7 @@ wakeup_sleepers()
         if (queued->state == WAITING) {
             queue_node_remove(&queued->queue);
         } else if (queued->state == SLEEPING) {
-            // nothing to do
+            assert(!queued->queue.root);
         } else {
             panic("Sleeping thread in illegal state");
         }
@@ -124,9 +125,7 @@ wakeup_sleepers()
 
         Thread* next = queued->timeout.next;
 
-        queued->timeout.prev = nullptr;
-        queued->timeout.next = nullptr;
-        queued->timeout.ns = 0;
+        queued->timeout = {};
         schedule_ready(queued);
         klog("schedule.c: woke %p\n", queued);
 

@@ -1,17 +1,17 @@
 #include <fluke/fluke.h>
-#include "syscall6.h"
+
+#define SYSCALLV_N 3
+#include "syscallv.h"
 
 int
 _fluke_thread_spawn(void (*func)(long), void* stack, long arg)
 {
     long* stack_ptr = stack;
-    *--stack_ptr = 0;
+    if (((long)stack_ptr & 0xf) == 0)
+        *--stack_ptr = 0;
 
-    return syscall6(
+    return _syscallv(
         SYSCALL_thread_spawn,
-        (long)func,
-        (long)stack_ptr,
-        arg,
-        0, 0, 0
+        (long)func, (long)stack_ptr, arg
     );
 }

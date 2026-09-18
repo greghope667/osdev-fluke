@@ -18,3 +18,9 @@
 #define EINTR                       15
 #define EDOM                        16
 #define ERANGE                      17
+#define ESPIPE                      18
+#define E2BIG                       19
+#define EPERM                       20
+#define ENODEV                      22
+
+#define EIPCIO                      21

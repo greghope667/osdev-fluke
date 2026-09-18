@@ -16,3 +16,7 @@
 #define SYSCALL_virtual_protect     0x1222
 #define SYSCALL_process_exit        0x1230
 #define SYSCALL_thread_spawn        0x1231
+#define SYSCALL_ipc_create          0x1240
+#define SYSCALL_ipc_call            0x1241
+#define SYSCALL_ipc_listen          0x1242
+#define SYSCALL_ipc_respond         0x1243

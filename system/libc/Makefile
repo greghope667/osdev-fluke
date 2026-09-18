@@ -27,8 +27,8 @@ CXXFLAGS += $(FLAGS) -std=gnu++26 -fno-exceptions -fno-rtti -Wno-invalid-offseto
 
 C_SRCS = $(shell find src -name '*.c')
 CXX_SRCS = $(shell find src -name '*.cxx')
-ASM_SRCS = $(shell find src -name '*.s')
-OBJS = $(ASM_SRCS:%.s=build/%.o) $(C_SRCS:%.c=build/%.o) $(CXX_SRCS:%.cxx=build/%.o)
+ASM_SRCS = $(shell find src -name '*.S')
+OBJS = $(ASM_SRCS:%.S=build/%.o) $(C_SRCS:%.c=build/%.o) $(CXX_SRCS:%.cxx=build/%.o)
 DEPS = $(C_SRCS:%.c=build/%.d) $(CXX_SRCS:%.cxx=build/%.d)
 
 -include $(DEPS)
@@ -42,7 +42,7 @@ build/src/string/%.o: src/string/%.c | dirs
 build/%.o: %.cxx | dirs
 	$(CC) $(CXXFLAGS) -c $< -MMD -MF build/$*.d -o $@
 
-build/%.o: %.s | dirs
+build/%.o: %.S | dirs
 	$(CC) -c $< -o $@
 
 libc.a: $(OBJS)

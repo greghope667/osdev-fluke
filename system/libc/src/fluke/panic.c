@@ -1,5 +1,7 @@
 #include <fluke/fluke.h>
-#include "syscall6.h"
+
+#define SYSCALLV_N 0
+#include "syscallv.h"
 
 void
 _fluke_panic(const char* reason)
@@ -7,10 +9,7 @@ _fluke_panic(const char* reason)
     _fluke_klog("panic() called from user space:");
     _fluke_klog(reason);
     for (;;) {
-        syscall6(
-            SYSCALL_panic,
-            0, 0, 0, 0, 0, 0
-        );
+        _syscallv(SYSCALL_panic);
         asm volatile ("hlt");
     }
 }

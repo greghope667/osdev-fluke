@@ -32,6 +32,21 @@ error_code copy_to_user8(void* dest, u64 value);
 error_code copy_from_user(void* dest, const void* src, isize size);
 error_code check_user_range(const void* v, isize len);
 
+#define MEMCPY_FAULT_READ 1
+#define MEMCPY_FAULT_WRITE 2
+[[nodiscard]] int memcpy_catch_fault(
+    void* dst, const void* src, isize size, int catch_fault);
+
+struct Thread_context;
+
+[[nodiscard]] int memcpy_user_user_catch_fault(
+    struct Thread_context* dest_thread,
+    void* dest_addr,
+    struct Thread_context* source_thread,
+    const void* source_addr,
+    isize size
+);
+
 #ifdef __cplusplus
 }
 #endif

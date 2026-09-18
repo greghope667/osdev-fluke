@@ -11,12 +11,18 @@ struct Thread : Thread_context {
         Thread** prev;
         Thread* next;
         u64 ns;
+        void cancel();
     } timeout;
 
     Queue_node queue;
 
     Tree::Node tree;
     struct Process* process;
+
+    Thread* ipc_caller;
+
+    void push_into(Queue*);
+    static Thread* pop_from(Queue*);
 
     struct Process& get_process();
 };

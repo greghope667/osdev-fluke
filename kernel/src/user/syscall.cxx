@@ -9,6 +9,7 @@
 #include "process.hxx"
 #include "share/share.h"
 #include "irq.h"
+#include "user/ipc.hxx"
 
 #define SYSCALL(s) static result<usize> do_syscall_ ## s (Context ctx, [[maybe_unused]] Process& process)
 
@@ -178,13 +179,48 @@ SYSCALL(thread_spawn)
     return 0;
 }
 
+SYSCALL(ipc_create)
+{
+    i8 buffer[64];
+    auto ntransfers = CTX_SYS_A1(ctx);
+    if (ntransfers >= sizeof(buffer))
+        return error_code(E2BIG);
+
+    TRY_ERRC(copy_from_user(buffer, (void*)CTX_SYS_A0(ctx), ntransfers));
+    int fd;
+    auto desc = TRY(descriptor_new(&process.descriptors, &fd));
+    auto ipc = TRY(IPC::create(buffer, ntransfers));
+    descriptor_assign(desc, ipc->handle());
+    CTX_SYS_R1(ctx) = (usize)ipc;
+    return fd;
+}
+
+SYSCALL(ipc_call)
+{
+    int fd = CTX_SYS_A0(ctx);
+    auto desc = TRY(descriptor_get(&process.descriptors, fd));
+    return desc->handle->ipc_call(ctx);
+}
+
+SYSCALL(ipc_listen)
+{
+    auto server = (IPC*)CTX_SYS_A0(ctx);
+    return server->listen(ctx);
+}
+
+SYSCALL(ipc_respond)
+{
+    TRY(IPC::respond(ctx));
+    return 0;
+}
+
 struct syscall_table_entry {
     result<usize> (*handler)(Context ctx, Process&);
     const char* name;
 };
 
 static constexpr auto syscalls = []{
-    constexpr auto N = SYSCALL_thread_spawn - SYSCALL_nop + 1;
+    constexpr auto N = SYSCALL_ipc_respond - SYSCALL_nop + 1;
     std::array<syscall_table_entry, N> table = {};
 
 #define ENTRY(s) \
@@ -205,6 +241,10 @@ static constexpr auto syscalls = []{
     ENTRY(virtual_map);
     ENTRY(virtual_unmap);
     ENTRY(thread_spawn);
+    ENTRY(ipc_create);
+    ENTRY(ipc_call);
+    ENTRY(ipc_listen);
+    ENTRY(ipc_respond);
 
     return table;
 }();

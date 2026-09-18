@@ -34,6 +34,7 @@ enum thread_state {
     READY,
     WAITING,
     SLEEPING,
+    CALLING,
 };
 
 struct Thread_context {

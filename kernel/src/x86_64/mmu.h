@@ -33,6 +33,7 @@ physical_t virt_to_phys(struct Page_map pm, void* ptr);
 void mmu_configure_root_address_space();
 
 void mmu_set_address_space(struct Page_map pm);
+void mmu_set_address_space_opt(struct Page_map pm);
 struct Page_map mmu_get_address_space();
 void mmu_reload_address_space();
 void mmu_leave_address_space();

@@ -175,8 +175,7 @@ call_transfer(Thread* caller, Thread* listener, int transfer_mode)
     caller->state = CALLING;
     listener->ipc_caller = caller;
     CTX_SYS_PC(&listener->ctx) = listener_callback;
-    schedule_ready(listener);
-    schedule_or_exit();
+    cpu_context_restore_and_exit(listener);
 }
 
 error_code
@@ -312,11 +311,11 @@ IPC::respond(Context rctx)
 
     CTX_SYS_R0(&caller->ctx) = CTX_SYS_A0(&responder->ctx);
     CTX_SYS_R1(&caller->ctx) = len;
-    schedule_ready(caller);
 
     CTX_SYS_R0(&responder->ctx) = 0;
     schedule_ready(responder);
-    schedule_or_exit();
+
+    cpu_context_restore_and_exit(caller);
 }
 
 // External entry points

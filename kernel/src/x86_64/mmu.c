@@ -18,6 +18,13 @@ mmu_set_address_space(struct Page_map pm)
     asm volatile ("" : : : "memory");
 }
 
+void
+mmu_set_address_space_opt(struct Page_map pm)
+{
+    if (read_CR(3) != pm.top_address.address)
+        mmu_set_address_space(pm);
+}
+
 struct Page_map
 mmu_get_address_space()
 {

@@ -114,7 +114,7 @@ cpu_context_restore_and_exit(struct Thread_context* thread)
 
     wrmsr(MSR_KERNEL_GS_BASE, 0);
     wrmsr(MSR_FS_BASE, 0);
-    mmu_set_address_space((struct Page_map){ thread->page_map_top });
+    mmu_set_address_space_opt((struct Page_map){ thread->page_map_top });
     fpu_load(thread->fpu_state);
 
     this_tls->current_thread = thread;

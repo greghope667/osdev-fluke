@@ -50,7 +50,7 @@ memcpy_user_user_catch_fault(
         return MEMCPY_FAULT_WRITE;
 
     assert(this_tls->current_thread == nullptr);
-    mmu_set_address_space((struct Page_map){ dest_thread->page_map_top });
+    mmu_set_address_space_opt((struct Page_map){ dest_thread->page_map_top });
     struct Page_map source_map = { source_thread->page_map_top };
 
     usize count = size;

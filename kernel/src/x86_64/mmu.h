@@ -40,6 +40,7 @@ void mmu_leave_address_space();
 
 // Creates a new address space with kernel space mapped, and user space empty
 error_code mmu_create_address_space(struct Page_map* out);
+error_code mmu_clone_address_space(struct Page_map pm, struct Page_map* out);
 void mmu_destroy_address_space(struct Page_map pm);
 
 #ifdef __cplusplus

@@ -13,5 +13,7 @@ struct VM {
     result<void> alloc_fixed_noreplace(usize address, isize length, unsigned prot);
     result<char*> alloc_movable(usize hint, isize length, unsigned prot);
     result<void> free(usize address, isize length);
+    result<void> clone(VM& to);
     void print();
+    ~VM();
 };

@@ -6,7 +6,9 @@
 #include "containers/tree.hxx"
 #include "descriptor.hxx"
 
-struct Thread : Thread_context {
+struct Process;
+
+struct Thread : Thread_context, pinned {
     struct Timeout {
         Thread** prev;
         Thread* next;
@@ -17,14 +19,15 @@ struct Thread : Thread_context {
     Queue_node queue = {};
 
     Tree::Node tree = {};
-    struct Process* process = {};
+    Process& process;
 
     Thread* ipc_caller = {};
 
+    Thread(Process& p) : process(p) {}
     void push_into(Queue*);
     static Thread* pop_from(Queue*);
 
-    struct Process& get_process();
+    Process& get_process();
 };
 
 static inline __attribute__((always_inline))
@@ -45,7 +48,7 @@ Thread* thread_cast(Tree::Node* node)
     return container_of(node, Thread, tree);
 }
 
-struct Process {
+struct Process : pinned {
     enum State {
         SPAWNING,
         ACTIVE,
@@ -59,6 +62,7 @@ struct Process {
 
     static result<Process*> create();
     result<Thread*> spawn_thread(usize code, usize stack, usize arg);
+    result<Process*> fork();
 
     VM& get_vm();
 };

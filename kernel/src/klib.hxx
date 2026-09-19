@@ -142,6 +142,7 @@ private:
 })
 
 struct pinned {
+    pinned() = default;
     pinned(const pinned&) = delete;
     pinned(pinned&&) = delete;
     pinned& operator=(const pinned&) = delete;

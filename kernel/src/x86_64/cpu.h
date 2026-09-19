@@ -61,6 +61,7 @@ error_code cpu_context_initialise_user(
     usize code,
     void* stack_top
 );
+error_code cpu_context_clone_current(struct Thread_context* to);
 struct Thread_context* cpu_context_save();
 void cpu_context_restore_and_exit(struct Thread_context* process) __attribute__((noreturn));
 void cpu_exit_idle() __attribute__((noreturn));

@@ -127,7 +127,7 @@ wakeup_sleepers()
 
         queued->timeout = {};
         schedule_ready(queued);
-        klog("schedule.c: woke %p\n", queued);
+        // klog("schedule.c: woke %p\n", queued);
 
         queued = next;
     }

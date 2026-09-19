@@ -36,6 +36,7 @@ struct Descriptor_table {
     result<Descriptor*> alloc(int& fd_out);
     result<Descriptor*> get(int fd);
     result<void> close(int fd);
+    result<void> clone(Descriptor_table& to);
 };
 
 // struct Descriptor* descriptor_reserve(struct Descriptor_table*, int* fd);

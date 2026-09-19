@@ -314,3 +314,32 @@ VM::print()
     for (auto a = first; a; a = a->next)
         print_range(*a);
 }
+
+VM::~VM()
+{
+    mmu_destroy_address_space(page_map);
+    auto area = first;
+    while (area) {
+        auto next = area->next;
+        kfree_t(area);
+        area = next;
+    }
+    *this = {};
+}
+
+result<void>
+VM::clone(VM& to)
+{
+    TRY_ERRC(mmu_clone_address_space(page_map, &to.page_map));
+    VM_area** route = &to.first;
+
+    for (auto from_area = first; from_area; from_area = from_area->next) {
+        auto area = TRY_ALLOC(kalloc_t<VM_area>());
+        *area = *from_area;
+        area->next = nullptr;
+
+        *route = area;
+        route = &area->next;
+    }
+    return {};
+}

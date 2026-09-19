@@ -94,6 +94,13 @@ SYSCALL(panic)
     panic("SYSCALL_panic called");
 }
 
+SYSCALL(fork)
+{
+    (void)ctx;
+    TRY(process.fork());
+    return 1;
+}
+
 SYSCALL(read)
 {
     int fd = CTX_SYS_A0(ctx);
@@ -233,6 +240,7 @@ static constexpr auto syscalls = []{
     ENTRY(claim_irq);
     ENTRY(klog);
     ENTRY(panic);
+    ENTRY(fork);
     ENTRY(read);
     ENTRY(seek);
     ENTRY(objctl);

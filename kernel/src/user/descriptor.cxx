@@ -93,3 +93,29 @@ Descriptor_table::close(int fd)
     TRY(get(fd))->close();
     return {};
 }
+
+template <size_t N>
+static void
+clone(std::array<Descriptor, N>& from, std::array<Descriptor, N>& to)
+{
+    for (size_t i=0; i<N; i++) {
+        assert(not to[i].open);
+        if (from[i].open) {
+            to[i].assign(from[i].handle);
+        }
+    }
+}
+
+result<void>
+Descriptor_table::clone(Descriptor_table& to)
+{
+    ::clone(l0, to.l0);
+    for (int i=0; i<L1; i++) {
+        assert(not to.l1[i]);
+        if (l1[i]) {
+            to.l1[i] = TRY(owned<table_l1l0>::make());
+            ::clone(*l1[i], *to.l1[i]);
+        }
+    }
+    return {};
+}

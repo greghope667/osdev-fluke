@@ -2,6 +2,7 @@
 #include <fluke/fluke.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 void
 print_mem_regions()
@@ -92,9 +93,11 @@ void create_ipcs()
         [IPC_TRANSFER_SMALLSTR] = 0,
     };
     auto pair = _fluke_ipc_create(map, sizeof(map));
+    if (fork() == 0) {
+        ipc_client(pair.first);
+    }
     auto stack = _fluke_virtual_map(nullptr, 0x4000, PROT_READ|PROT_WRITE, 0);
     _fluke_thread_spawn(ipc_server, stack + 0x2000, pair.second);
-    _fluke_thread_spawn(ipc_client, stack + 0x4000, pair.first);
 }
 
 static void panic()
@@ -111,6 +114,11 @@ static void test_fault()
 
 int main()
 {
+    static volatile bool entered = false;
+    if (entered)
+        _fluke_panic("Entered main twice?");
+    entered = true;
+
     test_fault();
 
     atexit(panic);
@@ -118,7 +126,7 @@ int main()
 
     serial_setup();
 
-    for (int i=0; i<15; i++)
+    for (int i=0; i<3; i++)
         create_ipcs();
 
     for (int i=0; i<3; i++) {

@@ -86,6 +86,21 @@ cpu_context_initialise_user(
     return 0;
 }
 
+error_code
+cpu_context_clone_current(struct Thread_context* to)
+{
+    auto current_thread = this_tls->current_thread;
+    assert(current_thread);
+    assert(current_thread->state == RUNNING);
+    *to = (struct Thread_context){
+        .state = FLOATING,
+        .ctx = *this_tls->user_context,
+        .page_map_top = current_thread->page_map_top,
+    };
+    to->fpu_state = TRY_ALLOC(fpu_alloc());
+    return 0;
+}
+
 struct Thread_context*
 cpu_context_save()
 {

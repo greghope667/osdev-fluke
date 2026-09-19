@@ -43,6 +43,7 @@ mmu_reload_address_space()
 error_code
 mmu_create_address_space(struct Page_map* out)
 {
+    assert(out->top_address.address == 0);
     void* page = mmu_alloc_page();
     const void* current = phys_to_virt(mmu_get_address_space().top_address);
     const int HALF = PAGE_SIZE / 2;
@@ -165,6 +166,37 @@ virt_to_phys(struct Page_map pm, void* virtual)
     return (physical_t){ (entry & 0x000f'ffff'ffff'f000ull) | (address & 0xfff) };
 }
 
+[[maybe_unused]] static void
+print(
+    struct Translation_table* table,
+    enum depth depth,
+    usize vbegin,
+    usize vend
+) {
+    int shift = virt_shift(depth);
+    usize pointee_size = 1ull << shift;
+
+    usize base = ROUND_DOWN_P2(vbegin, TABLE_ENTRY_COUNT * pointee_size);
+    int ibegin = (ROUND_DOWN_P2(vbegin, pointee_size) - base) >> shift;
+    int iend = (ROUND_UP_P2(vend, pointee_size) - base) >> shift;
+
+    for (isize i=ibegin; i<iend; i++) {
+        usize next_vbegin = MAX((i << shift) + base, vbegin);
+        usize next_vend = MIN(((i+1) << shift) + base, vend);
+        table_entry_t* entry = &table->entries[i];
+
+        if (*entry & PRESENT) {
+            for (int i=depth; i<PML4; i++) putchar('\t');
+            void* target = entry_target(*entry);
+            printf(
+                "%zi [%zx - %zx] %016zx\n",
+                i, (i<<shift)+base, ((i+1)<<shift) + base, *entry);
+            if (depth > PT)
+                print(target, depth-1, next_vbegin, next_vend);
+        }
+    }
+}
+
 static void
 assign(
     struct Translation_table* table,
@@ -266,6 +298,32 @@ edit(
             edit(target, depth-1, next_vbegin, next_vend, flags);
         } else {
             *entry = entry_address_bits(target) | flags;
+        }
+    }
+}
+
+static void
+clone(
+    struct Translation_table* in,
+    struct Translation_table* out,
+    enum depth depth
+) {
+    int ibegin = 0;
+    int iend = depth == PML4 ? TABLE_ENTRY_COUNT / 2 : TABLE_ENTRY_COUNT;
+    for (isize i=ibegin; i<iend; i++) {
+        table_entry_t* from = &in->entries[i];
+        table_entry_t* to = &out->entries[i];
+
+        if (*from & PRESENT) {
+            void* next_page = mmu_alloc_page();
+            if (depth > PT) {
+                *to = entry_address_bits(next_page) | INTERMEDIATE;
+                clone(entry_target(*from), next_page, depth-1);
+            } else {
+                auto permissions = *from & ~TABLE_ENTRY_ADDRESS_MASK;
+                *to = entry_address_bits(next_page) | permissions;
+                memcpy(next_page, entry_target(*from), PAGE_SIZE);
+            }
         }
     }
 }
@@ -373,4 +431,24 @@ void
 mmu_leave_address_space()
 {
     mmu_set_address_space(root);
+}
+
+error_code
+mmu_clone_address_space(struct Page_map in, struct Page_map* out)
+{
+    assert(out->top_address.address == 0);
+    void* to = mmu_alloc_page();
+    void* from = phys_to_virt(in.top_address);
+
+    // Copy kernel half
+    const int HALF = PAGE_SIZE / 2;
+    memcpy(to + HALF, from + HALF, HALF);
+
+    // Copy user half
+    clone(from, to, PML4);
+
+    *out = (struct Page_map){ hhdm_virt_to_phys(to) };
+    // print(from, PML4, 0, MEM_LOW_HALF_MAX);
+    // print(to, PML4, 0, MEM_LOW_HALF_MAX);
+    return 0;
 }

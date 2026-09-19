@@ -65,6 +65,8 @@ struct array {
     T data[N];
     constexpr auto& operator[](this auto&& self, size_t idx) { return self.data[idx]; }
     constexpr size_t count() const { return N; }
+    constexpr auto* begin() { return &data[0]; }
+    constexpr auto* end() { return &data[N]; }
 };
 
 } // namespace std

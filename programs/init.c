@@ -118,8 +118,8 @@ int main()
 
     serial_setup();
 
-    create_ipcs();
-    create_ipcs();
+    for (int i=0; i<15; i++)
+        create_ipcs();
 
     for (int i=0; i<3; i++) {
         long ctx = (((long)'a' + i) << 32) + 100;

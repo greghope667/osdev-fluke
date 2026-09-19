@@ -3,51 +3,63 @@
 #include "mem/alloc.hxx"
 #include "handle.hxx"
 
-constexpr int L0 = ARRAY_LENGTH(((struct Descriptor_table*)0)->l0);
-constexpr int L1 = ARRAY_LENGTH(((struct Descriptor_table*)0)->l1);
-constexpr int L1L0 = ARRAY_LENGTH(((struct Descriptor_table*)0)->l1[0]->l0);
+void
+Descriptor::assign(Handle* h)
+{
+    assert(not open);
+    assert(h->refcount() >= 0);
+    handle = h;
+    handle->dup();
+    open = true;
+}
 
-constexpr int DIRECT = L0;
-constexpr int INDIRECT = L1 * L1L0;
+void
+Descriptor::close()
+{
+    assert(open);
+    open = false;
+    handle->release();
+    handle = nullptr;
+}
+
+constexpr int DIRECT = Descriptor_table::L0;
+constexpr int INDIRECT = Descriptor_table::L1 * Descriptor_table::L1L0;
 
 result<Descriptor*>
-descriptor_new(Descriptor_table* table, int* fd)
+Descriptor_table::alloc(int& fd)
 {
     int n = 0;
 
     // Direct entries
-    for (int i=0; i<L0; i++, n++) {
-        if (!table->l0[i].open) {
-            *fd = n;
-            return { &table->l0[i] };
+    for (auto& desc : l0) {
+        if (not desc.open) {
+            fd = n;
+            return &desc;
         }
+        n++;
     }
 
     // Indirect entries
-    for (int i=0; i<L1; i++) {
-        auto l1 = table->l1[i];
-
-        if (!l1) {
-            l1 = TRY_ALLOC(kalloc_t<typeof(*l1)>());
-            memset(l1, 0, sizeof(*l1));
-            table->l1[i] = l1;
-            *fd = n;
-            return { &l1->l0[0] };
+    for (auto& l0 : l1) {
+        if (not l0) {
+            l0 = TRY(owned<table_l1l0>::make());
+            fd = n;
+            return &(*l0)[0];
         }
 
-        for (int j=0; j<L1L0; j++, n++) {
-            if (!l1->l0[j].open) {
-                *fd = n;
-                return &l1->l0[j];
+        for (auto& desc : *l0) {
+            if (not desc.open) {
+                fd = n;
+                return &desc;
             }
+            n++;
         }
     }
-
     return error_code(EMFILE);
 }
 
 result<Descriptor*>
-descriptor_get(Descriptor_table* table, int fd)
+Descriptor_table::get(int fd)
 {
     auto fail = error_code(EBADF);
 
@@ -55,31 +67,29 @@ descriptor_get(Descriptor_table* table, int fd)
         return fail;
 
     if (fd < DIRECT) {
-        auto l0 = &table->l0[fd];
-        if (!l0->open)
+        auto& desc = l0[fd];
+        if (not desc.open)
             return fail;
-        return l0;
+        return &desc;
     }
 
     fd -= DIRECT;
     if (fd < INDIRECT) {
-        auto l1 = table->l1[fd / L1L0];
-        if (!l1)
+        auto& l0 = l1[fd / L1L0];
+        if (!l0)
             return fail;
-        auto l0 = &l1->l0[fd % L1L0];
-        if (!l0->open)
+        auto& desc = (*l0)[fd % L1L0];
+        if (not desc.open)
             return fail;
-        return l0;
+        return &desc;
     }
 
     return fail;
 }
 
-void
-descriptor_assign(Descriptor* descriptor, Handle* handle)
+result<void>
+Descriptor_table::close(int fd)
 {
-    assert(!descriptor->open);
-    assert(handle->refcount() >= 0);
-    *descriptor = (struct Descriptor) { .handle = handle, .open = true };
-    handle->dup();
+    TRY(get(fd))->close();
+    return {};
 }

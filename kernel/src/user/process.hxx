@@ -12,14 +12,14 @@ struct Thread : Thread_context {
         Thread* next;
         u64 ns;
         void cancel();
-    } timeout;
+    } timeout = {};
 
-    Queue_node queue;
+    Queue_node queue = {};
 
-    Tree::Node tree;
-    struct Process* process;
+    Tree::Node tree = {};
+    struct Process* process = {};
 
-    Thread* ipc_caller;
+    Thread* ipc_caller = {};
 
     void push_into(Queue*);
     static Thread* pop_from(Queue*);
@@ -52,10 +52,10 @@ struct Process {
         DEAD,
     };
 
-    VM vm;
-    Descriptor_table descriptors;
-    Tree threads;
-    State state;
+    VM vm = {};
+    Descriptor_table descriptors = {};
+    Tree threads = {};
+    State state = SPAWNING;
 
     static result<Process*> create();
     result<Thread*> spawn_thread(usize code, usize stack, usize arg);

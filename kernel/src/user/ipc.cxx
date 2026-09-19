@@ -266,15 +266,6 @@ response_error(Thread* caller, error_code shame)
     return shame;
 }
 
-static result<void>::unit
-respond_register(Thread* caller, Context ctx)
-{
-    CTX_SYS_R0(&caller->ctx) = CTX_SYS_A0(ctx);
-    CTX_SYS_R1(&caller->ctx) = CTX_SYS_A1(ctx);
-    schedule_ready(caller);
-    return {};
-}
-
 result<void>
 IPC::respond(Context rctx)
 {
@@ -288,8 +279,12 @@ IPC::respond(Context rctx)
     assert(caller->state == CALLING);
     caller->state = FLOATING;
 
-    if (!(CTX_MODE(rctx) & IPC_CALL_RXSTR))
-        return respond_register(caller, rctx);
+    if (!(CTX_MODE(rctx) & IPC_CALL_RXSTR)) {
+        CTX_SYS_R0(&caller->ctx) = CTX_SYS_A0(rctx);
+        CTX_SYS_R1(&caller->ctx) = CTX_SYS_A1(rctx);
+        schedule_ready(caller);
+        return {};
+    }
 
     // Server responds with string message
 

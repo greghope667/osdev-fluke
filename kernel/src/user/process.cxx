@@ -6,22 +6,14 @@ result<Process*>
 Process::create()
 {
     auto process = TRY(owned<Process>::make());
-
-    memset(process.get(), 0, sizeof(*process));
-    process->state = SPAWNING;
-
     TRY(process->vm.init());
-
     return process.release();
 }
 
 result<Thread*>
 Process::spawn_thread(usize code, usize stack, usize arg)
 {
-    auto thread = TRY(owned<Thread>::make());
-    memset(thread.get(), 0, sizeof(*thread));
-
-    thread->process = this;
+    auto thread = TRY(owned<Thread>::make(Thread{.process = this}));
 
     TRY_ERRC(cpu_context_initialise_user(
         thread.get(),

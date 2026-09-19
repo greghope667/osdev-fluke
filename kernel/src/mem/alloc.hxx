@@ -31,7 +31,7 @@ struct owned {
     constexpr owned(owned&& o) : ptr_(std::exchange(o.ptr_, nullptr)) {}
     constexpr owned& operator=(owned&& o) {
         if (this != &o) {
-            ~owned();
+            this->~owned();
             ptr_ = std::exchange(o.ptr_, nullptr);
         }
         return *this;
@@ -63,3 +63,7 @@ private:
     constexpr explicit owned(T* ptr) : ptr_(ptr) {}
     T* ptr_{};
 };
+
+static_assert(alloc_calc_size_class(8) == 0);
+static_assert(alloc_calc_size_class(9) == 1);
+static_assert(alloc_calc_size_class(512) == 6);

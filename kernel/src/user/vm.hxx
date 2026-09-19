@@ -5,10 +5,8 @@
 #include <fluke/defs/virtual.h>     // IWYU pragma: export
 
 struct VM {
-    Page_map page_map;
-    // Tree ranges;
-    // usize first_region;
-    struct VM_area* first;
+    Page_map page_map = {};
+    struct VM_area* first = {};
 
     result<void> init();
     result<void> alloc_fixed_overwrite(usize address, isize length, unsigned prot);

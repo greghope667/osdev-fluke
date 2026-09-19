@@ -41,7 +41,6 @@ struct VM_area {
 result<void>
 VM::init()
 {
-    first = {};
     TRY_ERRC(mmu_create_address_space(&page_map));
     return {};
 }

@@ -15,7 +15,7 @@ try_user_init()
     auto func = (usize)user_share_exec_elf;
 
     int fd;
-    auto desc = TRY(descriptor_new(&proc->descriptors, &fd));
+    auto desc = TRY(proc->descriptors.alloc(fd));
     auto thread = TRY(proc->spawn_thread(func, (usize)stack + PAGE_SIZE, fd));
 
     auto cmdline = bootloader_cmdline();
@@ -24,7 +24,7 @@ try_user_init()
     auto handle = bootloader_open_module(cmdline, strlen(cmdline));
     if (not handle)
         panic("Init program not found");
-    descriptor_assign(desc, handle);
+    desc->assign(handle);
 
     proc->state = Process::ACTIVE;
     schedule_ready(thread);

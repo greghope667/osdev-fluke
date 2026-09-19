@@ -44,7 +44,7 @@ SYSCALL(nsleep)
 SYSCALL(open_module)
 {
     int fd = 0;
-    auto desc = TRY(descriptor_new(&process.descriptors, &fd));
+    auto desc = TRY(process.descriptors.alloc(fd));
 
     char path[128];
     usize len = CTX_SYS_A1(ctx);
@@ -57,7 +57,7 @@ SYSCALL(open_module)
     if (!handle)
         return error_code(ENOENT);
 
-    descriptor_assign(desc, handle);
+    desc->assign(handle);
     return fd;
 }
 
@@ -70,9 +70,9 @@ SYSCALL(user_share)
 SYSCALL(claim_irq)
 {
     int fd = 0;
-    auto desc = TRY(descriptor_new(&process.descriptors, &fd));
+    auto desc = TRY(process.descriptors.alloc(fd));
     auto handle = TRY(irq_claim(CTX_SYS_A0(ctx)));
-    descriptor_assign(desc, handle);
+    desc->assign(handle);
     return fd;
 }
 
@@ -100,7 +100,7 @@ SYSCALL(read)
     auto buffer = (void*)CTX_SYS_A1(ctx);
     isize len = std::min<usize>(CTX_SYS_A2(ctx), ISIZE_MAX);
 
-    auto desc = TRY(descriptor_get(&process.descriptors, fd));
+    auto desc = TRY(process.descriptors.get(fd));
     auto handle = desc->handle;
 
     TRY_ERRC(check_user_range(buffer, len));
@@ -111,7 +111,7 @@ SYSCALL(read)
 SYSCALL(seek)
 {
     int fd = CTX_SYS_A0(ctx);
-    auto desc = TRY(descriptor_get(&process.descriptors, fd));
+    auto desc = TRY(process.descriptors.get(fd));
     auto handle = desc->handle;
     return TRY(handle->seek(CTX_SYS_A1(ctx), CTX_SYS_A2(ctx)));
 }
@@ -120,7 +120,7 @@ SYSCALL(objctl)
 {
     int fd = CTX_SYS_A0(ctx);
     unsigned op = CTX_SYS_A1(ctx);
-    auto desc = TRY(descriptor_get(&process.descriptors, fd));
+    auto desc = TRY(process.descriptors.get(fd));
     auto handle = desc->handle;
     return handle->ctl(ctx, op);
 }
@@ -152,7 +152,6 @@ SYSCALL(virtual_map)
         addr = ROUND_DOWN_P2(addr, PAGE_SIZE);
         addr = (usize)TRY(process.vm.alloc_movable(addr, len, prot));
     }
-    // process->vm.print();
     return addr;
 }
 
@@ -166,8 +165,6 @@ SYSCALL(virtual_unmap)
     TRY_ERRC(check_user_range((void*)addr, len));
 
     TRY(process.vm.free(addr, len));
-
-    // process->vm.print();
     return 0;
 }
 
@@ -175,6 +172,7 @@ SYSCALL(thread_spawn)
 {
     usize code = CTX_SYS_A0(ctx), stack = CTX_SYS_A1(ctx), arg = CTX_SYS_A2(ctx);
     auto thread = TRY(process.spawn_thread(code, stack, arg));
+    CTX_SYS_R1(ctx) = (usize)thread;
     schedule_ready(thread);
     return 0;
 }
@@ -188,9 +186,9 @@ SYSCALL(ipc_create)
 
     TRY_ERRC(copy_from_user(buffer, (void*)CTX_SYS_A0(ctx), ntransfers));
     int fd;
-    auto desc = TRY(descriptor_new(&process.descriptors, &fd));
+    auto desc = TRY(process.descriptors.alloc(fd));
     auto ipc = TRY(IPC::create(buffer, ntransfers));
-    descriptor_assign(desc, ipc->handle());
+    desc->assign(ipc->handle());
     CTX_SYS_R1(ctx) = (usize)ipc;
     return fd;
 }
@@ -198,7 +196,7 @@ SYSCALL(ipc_create)
 SYSCALL(ipc_call)
 {
     int fd = CTX_SYS_A0(ctx);
-    auto desc = TRY(descriptor_get(&process.descriptors, fd));
+    auto desc = TRY(process.descriptors.get(fd));
     return desc->handle->ipc_call(ctx);
 }
 

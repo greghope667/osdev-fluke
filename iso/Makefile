@@ -9,7 +9,7 @@ KERNEL ?= ../kernel/kernel.elf
 ### Build directories
 
 dirs:
-	mkdir -p bin build/boot/limine/ build/EFI/BOOT/
+	mkdir -p build/boot/limine/ build/EFI/BOOT/
 
 ### ISO build
 

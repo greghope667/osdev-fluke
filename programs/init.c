@@ -1,7 +1,5 @@
 #include <fluke/defs/fluke.h>
 #include <fluke/fluke.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 void
@@ -100,6 +98,7 @@ void create_ipcs()
     _fluke_thread_spawn(ipc_server, stack + 0x2000, pair.second);
 }
 
+__attribute__((destructor(0)))
 static void panic()
 {
     _fluke_panic("Panic from init");
@@ -112,16 +111,15 @@ static void test_fault()
         _fluke_panic("test_fault() failed");
 }
 
+__attribute__((constructor(50))) void construct50() { _fluke_klog(__PRETTY_FUNCTION__); }
+__attribute__((constructor(150))) void construct150() { _fluke_klog(__PRETTY_FUNCTION__); }
+__attribute__((destructor(50))) void destruct50() { _fluke_klog(__PRETTY_FUNCTION__); }
+__attribute__((destructor(150))) void destruct150() { _fluke_klog(__PRETTY_FUNCTION__); }
+
 int main()
 {
-    static volatile bool entered = false;
-    if (entered)
-        _fluke_panic("Entered main twice?");
-    entered = true;
-
     test_fault();
 
-    atexit(panic);
     _fluke_klog("Hello from init process");
 
     serial_setup();

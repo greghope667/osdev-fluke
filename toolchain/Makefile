@@ -55,7 +55,9 @@ configure-gcc:
 		--disable-libgomp \
 		--disable-gcov \
 		--disable-libstdcxx \
+		--disable-tm-clone-registry \
 		--enable-languages=c,c++ \
+		--enable-initfini-array \
 		--disable-werror
 
 build-binutils:

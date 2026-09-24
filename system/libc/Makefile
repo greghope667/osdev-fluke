@@ -37,7 +37,7 @@ build/%.o: %.c | dirs
 	$(CC) $(CFLAGS) -c $< -MMD -MF build/$*.d -o $@
 
 build/src/string/%.o: src/string/%.c | dirs
-	$(CC) $(CFLAGS) -fno-builtin -c $< -MMD -MF build/$*.d -o $@
+	$(CC) $(CFLAGS) -fno-builtin -c $< -MMD -MF build/src/string/$*.d -o $@
 
 build/%.o: %.cxx | dirs
 	$(CC) $(CXXFLAGS) -c $< -MMD -MF build/$*.d -o $@

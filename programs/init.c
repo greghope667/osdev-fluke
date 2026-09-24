@@ -49,30 +49,35 @@ serial_ping(long ctx)
     for (int i=0; i<limit; i++) {
         _fluke_irq_ack_wait(irqd, 4'000'000'000);
         while (inb(port + 5) & 1) {
-            outb(port, id);
-            outb(port, inb(port));
+            putchar(id);
+            putchar(inb(port));
         }
     }
+}
+
+int __io_putchar(int ch)
+{
+    while (!(inb(port + 5) & 0x40))
+        __builtin_ia32_pause();
+    outb(port, ch);
+    return (u8)ch;
 }
 
 void ipc_client(long fd)
 {
     for (;;) {
         _fluke_nsleep(750'000'000);
-        char buf[5] = "tx"; auto ret = _fluke_ipc_call(
+        char buf[5] = "tx";
+        auto ret = _fluke_ipc_call(
             fd, (long)buf, sizeof(buf),
             (1 << IPC_CLASS_SHIFT) | IPC_CALL_RXSTR | IPC_CALL_TXSTR);
-        for (int i=0; i<ret.second; i++) {
-            outb(port, buf[i]);
-        }
+        fwrite(buf, 1, ret.second, stdout);
     }
 }
 
 int ipc_server_callback(long, long aptr, long alen, int, long, long)
 {
-    for (int i=0; i<alen; i++) {
-        outb(port, ((char*)aptr)[i]);
-    }
+    fwrite((char*)aptr, 1, alen, stdout);
     return _fluke_ipc_respond(0, (long)"rx", 2, IPC_CALL_RXSTR);
 }
 
@@ -111,18 +116,18 @@ static void test_fault()
         _fluke_panic("test_fault() failed");
 }
 
-__attribute__((constructor(50))) void construct50() { _fluke_klog(__PRETTY_FUNCTION__); }
-__attribute__((constructor(150))) void construct150() { _fluke_klog(__PRETTY_FUNCTION__); }
-__attribute__((destructor(50))) void destruct50() { _fluke_klog(__PRETTY_FUNCTION__); }
-__attribute__((destructor(150))) void destruct150() { _fluke_klog(__PRETTY_FUNCTION__); }
+__attribute__((constructor(50))) void construct50() { puts(__PRETTY_FUNCTION__); }
+__attribute__((constructor(150))) void construct150() { puts(__PRETTY_FUNCTION__); }
+__attribute__((destructor(50))) void destruct50() { puts(__PRETTY_FUNCTION__); }
+__attribute__((destructor(150))) void destruct150() { puts(__PRETTY_FUNCTION__); }
 
 int main()
 {
+    serial_setup();
     test_fault();
 
-    _fluke_klog("Hello from init process");
-
-    serial_setup();
+    puts("Hello from init process");
+    printf("printf %s %p %d %f\n", __PRETTY_FUNCTION__, main, 123456, 123.456);
 
     for (int i=0; i<3; i++)
         create_ipcs();

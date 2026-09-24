@@ -41,12 +41,12 @@ char*   fgets(char* __restrict __buf, size_t __n, FILE*);
 FILE*   fopen(const char* __name, const char* __mode);
 int     fputc(int __ch, FILE*);
 int     fputs(const char* __str, FILE*);
-size_t  fread(void* __restrict __buf, size_t __size, size_t __n, FILE*);
+size_t  fread(void* __restrict __buf, size_t __item_size, size_t __nitems, FILE*);
 int     fseek(FILE*, long __off, int __whence);
 int     fseeko(FILE*, off_t __off, int __whence);
 long    ftell(FILE*);
 off_t   ftello(FILE*);
-size_t  fwrite(const void* __buf, size_t __size, size_t __n, FILE*);
+size_t  fwrite(const void* __buf, size_t __item_size, size_t __nitems, FILE*);
 
 int     getchar();
 int     putchar(int __ch);

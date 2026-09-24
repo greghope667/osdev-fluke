@@ -15,7 +15,6 @@ _start:
         xor     ebp, ebp                # End of stack frame ptr
         mov     rdi, rsp                # argc/argv pointer
         and     rsp, -16                # Align stack just in case
-        push    rbp
 
         lea     rsi, main
         lea     rdx, _init

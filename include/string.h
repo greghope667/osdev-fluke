@@ -20,6 +20,7 @@ char*   strchr(const char* __s, int ch) __NOTHROW;
 int     strcmp(const char*, const char*) __NOTHROW;
 char*   strcpy(char* __restrict __dst, const char* __restrict __src) __NOTHROW;
 size_t  strlen(const char* __str) __NOTHROW;
+size_t  strnlen(const char* __str, size_t __maxlen) __NOTHROW;
 
 
 #ifdef __cplusplus

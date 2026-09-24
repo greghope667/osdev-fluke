@@ -1,5 +1,7 @@
 #pragma once
 
+#define PRIVATE __attribute__((visibility("protected")))
+
 int __libc_start_main(
     long* stack_vars,
     int (*main)(int, char**, char**),
@@ -8,3 +10,5 @@ int __libc_start_main(
 );
 
 void __libc_do_atexit();
+
+PRIVATE extern int __libc_working_dirfd;

@@ -22,5 +22,6 @@
 #define E2BIG                       19
 #define EPERM                       20
 #define ENODEV                      22
+#define EOVERFLOW                   23
 
 #define EIPCIO                      21

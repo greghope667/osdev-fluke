@@ -1,4 +1,5 @@
 --target=x86_64-elf
+-std=gnu23
 -Wall
 -Wextra
 -fbuiltin

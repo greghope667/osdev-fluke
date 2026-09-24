@@ -32,6 +32,7 @@ __libc_start_main(
     init();
     atexit(fini);
 
+    __libc_init_stdio();
     __libc_do_init_array();
     atexit(__libc_do_fini_array);
 

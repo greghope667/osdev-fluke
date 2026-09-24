@@ -34,6 +34,7 @@ struct Descriptor_table {
     // struct Descriptor_table_l2* l2[4];
 
     result<Descriptor*> alloc(int& fd_out);
+    result<Descriptor*> alloc_overwrite(int fd);
     result<Descriptor*> get(int fd);
     result<void> close(int fd);
     result<void> clone(Descriptor_table& to);

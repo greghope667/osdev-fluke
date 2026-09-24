@@ -101,6 +101,32 @@ SYSCALL(fork)
     return 1;
 }
 
+SYSCALL(dup)
+{
+    int oldfd = CTX_SYS_A0(ctx);
+    int newfd = CTX_SYS_A1(ctx);
+    if (oldfd == newfd)
+        return error_code(EINVAL);
+
+    auto olddesc = TRY(process.descriptors.get(oldfd));
+
+    Descriptor* newdesc;
+    if (newfd >= 0)
+        newdesc = TRY(process.descriptors.alloc_overwrite(newfd));
+    else
+        newdesc = TRY(process.descriptors.alloc(newfd));
+
+    newdesc->assign(olddesc->handle);
+    return newfd;
+}
+
+SYSCALL(close)
+{
+    int fd = CTX_SYS_A0(ctx);
+    TRY(process.descriptors.close(fd));
+    return 0;
+}
+
 SYSCALL(read)
 {
     int fd = CTX_SYS_A0(ctx);
@@ -113,6 +139,21 @@ SYSCALL(read)
     TRY_ERRC(check_user_range(buffer, len));
 
     return TRY(handle->read(buffer, len));
+}
+
+SYSCALL(write)
+{
+    int fd = CTX_SYS_A0(ctx);
+    auto buffer = (const void*)CTX_SYS_A1(ctx);
+    isize len = std::min<usize>(CTX_SYS_A2(ctx), ISIZE_MAX);
+
+    auto desc = TRY(process.descriptors.get(fd));
+    auto handle = desc->handle;
+
+    TRY_ERRC(check_user_range(buffer, len));
+
+    return TRY(handle->write(buffer, len));
+
 }
 
 SYSCALL(seek)
@@ -241,7 +282,10 @@ static constexpr auto syscalls = []{
     ENTRY(klog);
     ENTRY(panic);
     ENTRY(fork);
+    ENTRY(dup);
+    ENTRY(close);
     ENTRY(read);
+    ENTRY(write);
     ENTRY(seek);
     ENTRY(objctl);
     ENTRY(virtual_map);

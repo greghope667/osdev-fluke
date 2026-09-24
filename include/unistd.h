@@ -30,6 +30,9 @@ extern "C" {
 void    _exit(int __status) __NOTHROW __NORETURN;
 // int     access(const char* __path, int __access_mode);
 int     close(int __fd);
+int     dup(int __oldfd);
+int     dup2(int __oldfd, int __newfd);
+int     dup3(int __oldfd, int __newfd, int __flags);
 int     execv(const char* __path, char* const __argv[]) __NOTHROW;
 int     execve(const char* __path, char* const __argv[], char* const __envp[]) __NOTHROW;
 int     execvp(const char* __file, char* const __argv[]) __NOTHROW;

@@ -49,57 +49,10 @@ serial_ping(long ctx)
     for (int i=0; i<limit; i++) {
         _fluke_irq_ack_wait(irqd, 4'000'000'000);
         while (inb(port + 5) & 1) {
-            putchar(id);
-            putchar(inb(port));
+            char buf[2] = { id, inb(port) };
+            fwrite(buf, 1, 2, stderr);
         }
     }
-}
-
-int __io_putchar(int ch)
-{
-    while (!(inb(port + 5) & 0x40))
-        __builtin_ia32_pause();
-    outb(port, ch);
-    return (u8)ch;
-}
-
-void ipc_client(long fd)
-{
-    for (;;) {
-        _fluke_nsleep(750'000'000);
-        char buf[5] = "tx";
-        auto ret = _fluke_ipc_call(
-            fd, (long)buf, sizeof(buf),
-            (1 << IPC_CLASS_SHIFT) | IPC_CALL_RXSTR | IPC_CALL_TXSTR);
-        fwrite(buf, 1, ret.second, stdout);
-    }
-}
-
-int ipc_server_callback(long, long aptr, long alen, int, long, long)
-{
-    fwrite((char*)aptr, 1, alen, stdout);
-    return _fluke_ipc_respond(0, (long)"rx", 2, IPC_CALL_RXSTR);
-}
-
-void ipc_server(long handle)
-{
-    for (;;) {
-        char buf[10] = {};
-        _fluke_ipc_listen(handle, (long)buf, sizeof(buf), 1, ipc_server_callback);
-    }
-}
-
-void create_ipcs()
-{
-    u8 map[] = {
-        [IPC_TRANSFER_SMALLSTR] = 1,
-    };
-    auto pair = _fluke_ipc_create(map, sizeof(map));
-    if (fork() == 0) {
-        ipc_client(pair.first);
-    }
-    auto stack = _fluke_virtual_map(nullptr, 0x4000, PROT_READ|PROT_WRITE, 0);
-    _fluke_thread_spawn(ipc_server, stack + 0x2000, pair.second);
 }
 
 __attribute__((destructor(0)))
@@ -115,21 +68,45 @@ static void test_fault()
         _fluke_panic("test_fault() failed");
 }
 
-__attribute__((constructor(50))) void construct50() { puts(__PRETTY_FUNCTION__); }
-__attribute__((constructor(150))) void construct150() { puts(__PRETTY_FUNCTION__); }
-__attribute__((destructor(50))) void destruct50() { puts(__PRETTY_FUNCTION__); }
-__attribute__((destructor(150))) void destruct150() { puts(__PRETTY_FUNCTION__); }
+static int
+stdout_write_callback(long, long aptr, long alen, int, long, long)
+{
+    for (long i=0; i<alen; i++) {
+        while (!(inb(port + 5) & 0x40))
+            __builtin_ia32_pause();
+        auto ch = ((char*)aptr)[i];
+        outb(port, ch);
+    }
+    return _fluke_ipc_respond(alen, 0, 0, 0);
+}
+
+static void
+setup_stdout()
+{
+    u8 map[] = {
+        [IPC_TRANSFER_WRITE] = 1,
+    };
+    auto pair = _fluke_ipc_create(map, sizeof(map));
+    dup2(pair.first, 1);
+    dup2(pair.first, 2);
+    if (fork() > 0)
+        return;
+
+    char buf[128];
+    for (;;) {
+        _fluke_ipc_listen(pair.second, (long)buf, sizeof(buf), 1, stdout_write_callback);
+    }
+}
 
 int main()
 {
+    setup_stdout();
+
     serial_setup();
     test_fault();
 
     puts("Hello from init process");
     printf("printf %s %p %d %f\n", __PRETTY_FUNCTION__, main, 123456, 123.456);
-
-    for (int i=0; i<3; i++)
-        create_ipcs();
 
     for (int i=0; i<3; i++) {
         long ctx = (((long)'a' + i) << 32) + 100;

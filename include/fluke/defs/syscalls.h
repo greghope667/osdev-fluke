@@ -9,7 +9,10 @@
 #define SYSCALL_klog                0x1206
 #define SYSCALL_panic               0x1207
 #define SYSCALL_fork                0x1208
+#define SYSCALL_dup                 0x1209
+#define SYSCALL_close               0x120a
 #define SYSCALL_read                0x1210
+#define SYSCALL_write               0x1211
 #define SYSCALL_seek                0x1212
 #define SYSCALL_objctl              0x121f
 #define SYSCALL_virtual_map         0x1220

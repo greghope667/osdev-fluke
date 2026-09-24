@@ -12,3 +12,4 @@ int __libc_start_main(
 void __libc_do_atexit();
 
 PRIVATE extern int __libc_working_dirfd;
+PRIVATE void __libc_init_stdio();

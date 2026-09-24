@@ -59,6 +59,35 @@ Descriptor_table::alloc(int& fd)
 }
 
 result<Descriptor*>
+Descriptor_table::alloc_overwrite(int fd)
+{
+    auto fail = error_code(EBADF);
+
+    if (fd < 0)
+        return fail;
+
+    if (fd < DIRECT) {
+        auto& desc = l0[fd];
+        if (desc.open)
+            desc.close();
+        return &desc;
+    }
+
+    fd -= DIRECT;
+    if (fd < INDIRECT) {
+        auto& l0 = l1[fd / L1L0];
+        if (!l0)
+            l0 = TRY(owned<table_l1l0>::make());
+        auto& desc = (*l0)[fd % L1L0];
+        if (desc.open)
+            desc.close();
+        return &desc;
+    }
+
+    return fail;
+}
+
+result<Descriptor*>
 Descriptor_table::get(int fd)
 {
     auto fail = error_code(EBADF);

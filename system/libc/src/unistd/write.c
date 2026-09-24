@@ -7,13 +7,13 @@
 
  __NOTHROW
 ssize_t
-read(int fd, void* restrict buf, size_t size)
+write(int fd, const void* buf, size_t size)
 {
     if (size > INT_MAX)
         size = INT_MAX;
 
     long ret = _syscallv(
-        SYSCALL_read,
+        SYSCALL_write,
         fd, (long)buf, size
     );
 

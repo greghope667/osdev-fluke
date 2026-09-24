@@ -25,3 +25,4 @@
 #define EOVERFLOW                   23
 
 #define EIPCIO                      21
+#define EIPCNX                      24

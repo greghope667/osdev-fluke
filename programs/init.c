@@ -85,15 +85,14 @@ void ipc_server(long handle)
 {
     for (;;) {
         char buf[10] = {};
-        _fluke_ipc_listen(handle, (long)buf, sizeof(buf), 0, ipc_server_callback);
+        _fluke_ipc_listen(handle, (long)buf, sizeof(buf), 1, ipc_server_callback);
     }
 }
 
 void create_ipcs()
 {
-    __int8_t map[] = {
-        [IPC_TRANSFER_REGISTER] = 0,
-        [IPC_TRANSFER_SMALLSTR] = 0,
+    u8 map[] = {
+        [IPC_TRANSFER_SMALLSTR] = 1,
     };
     auto pair = _fluke_ipc_create(map, sizeof(map));
     if (fork() == 0) {

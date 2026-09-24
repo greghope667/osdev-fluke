@@ -9,7 +9,6 @@
 #include <fluke/defs/ipc.h>
 #include <fluke/defs/limits.h>
 
-#define TRANSFER_MODE_MAX 5
 #define CTX_PTR CTX_SYS_A1
 #define CTX_LEN CTX_SYS_A2
 #define CTX_MODE CTX_SYS_A3
@@ -37,16 +36,16 @@ struct IPC_handle final : Handle {
 
 struct IPCimpl : IPC {
     IPC_handle handle = {};
-    i8 transfer_map[TRANSFER_MODE_MAX];
+    u8 transfer_map[TRANSFER_MAX];
     u8 channel_count;
     bool closed_call = false, closed_listen = false;
     IPC_channel channels[];
 
     result<IPC_channel*> transfer_channel(int transfer_mode) {
         auto channel_id = transfer_map[transfer_mode];
-        if (channel_id < 0)
-            return error_code(EINVAL);
-        return &channels[channel_id];
+        if (channel_id == 0)
+            return error_code(EIPCNX);
+        return &channels[channel_id-1];
     }
 
     usize size() {
@@ -226,10 +225,10 @@ IPC::listen(Context ctx)
     assert(not self.closed_listen);
 
     auto channel_id = CTX_MODE(ctx);
-    if (channel_id >= self.channel_count)
+    if (channel_id > self.channel_count)
         return error_code(EINVAL);
 
-    auto& channel = self.channels[channel_id];
+    auto& channel = self.channels[channel_id-1];
 
     Thread* caller;
     Thread* listener = thread_cast(cpu_context_save());
@@ -405,24 +404,20 @@ IPC::close(Tree& tree_root)
 }
 
 result<IPC*>
-IPC::create(i8 transfers[], usize ntransfers)
+IPC::create(u8 transfers[TRANSFER_MAX])
 {
-    if (ntransfers >= TRANSFER_MODE_MAX)
-        return error_code(EINVAL);
+    u8 transfer_map[TRANSFER_MAX] = {};
 
-    i8 transfer_map[TRANSFER_MODE_MAX];
-    memset(transfer_map, -1, sizeof(transfer_map));
-
-    i8 max_channel = 0;
-    for (auto n = ntransfers; n --> 0;) {
-        i8 channel = transfers[n];
-        if (channel < 0)
+    u8 max_channel = 0;
+    for (int i = 0; i<TRANSFER_MAX; i++) {
+        u8 channel = transfers[i];
+        if (channel == 0)
             continue;
-        if (channel >= TRANSFER_MODE_MAX)
+        if (channel > TRANSFER_MAX)
             return error_code(EINVAL);
-        if (channel >= max_channel)
-            max_channel = channel + 1;
-        transfer_map[n] = channel;
+        if (channel > max_channel)
+            max_channel = channel;
+        transfer_map[i] = channel;
     }
 
     auto size = sizeof(IPCimpl) + max_channel * sizeof(IPC_channel);

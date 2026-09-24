@@ -6,7 +6,7 @@
 
 struct _fluke_ipair
 _fluke_ipc_create(
-    signed char transfer_map[],
+    unsigned char transfer_map[],
     unsigned ntransfer_map
 ) {
     long handle_out;

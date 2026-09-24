@@ -186,15 +186,15 @@ SYSCALL(thread_spawn)
 
 SYSCALL(ipc_create)
 {
-    i8 buffer[64];
+    u8 transfers[IPC::TRANSFER_MAX] = {};
     auto ntransfers = CTX_SYS_A1(ctx);
-    if (ntransfers >= sizeof(buffer))
+    if (ntransfers > sizeof(transfers))
         return error_code(E2BIG);
 
-    TRY_ERRC(copy_from_user(buffer, (void*)CTX_SYS_A0(ctx), ntransfers));
+    TRY_ERRC(copy_from_user(transfers, (void*)CTX_SYS_A0(ctx), ntransfers));
     int fd;
     auto desc = TRY(process.descriptors.alloc(fd));
-    auto ipc = TRY(IPC::create(buffer, ntransfers));
+    auto ipc = TRY(IPC::create(transfers));
     desc->assign(ipc->handle());
     CTX_SYS_R1(ctx) = (usize)ipc;
     return fd;

@@ -34,7 +34,7 @@ typedef int (*_fluke_ipc_callback)(
 );
 
 struct _fluke_ipair
-        _fluke_ipc_create(signed char transfer_map[], unsigned ntransfer_map);
+        _fluke_ipc_create(unsigned char transfer_map[], unsigned ntransfer_map);
 
 struct _fluke_lpair
         _fluke_ipc_call(int fd, long aptr, long alen, int mode, ...);

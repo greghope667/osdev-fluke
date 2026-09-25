@@ -6,7 +6,7 @@
 struct Module final : Handle {
     const char* address;
     isize size;
-    isize offset;
+    isize offset = 0;
 
     Module(const void* data, isize size)
         : address((const char*)data)
@@ -25,6 +25,8 @@ Module::read(void* dest, isize len)
 {
     assert(len > 0);
     isize bytes = MIN(len, size - offset);
+    if (bytes == 0)
+        return 0;
     TRY_ERRC(copy_to_user(dest, address + offset, bytes));
     offset += bytes;
     return bytes;

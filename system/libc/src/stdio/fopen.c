@@ -8,7 +8,8 @@ static int
 parse_mode_string(const char* mode)
 {
     char first = mode[0];
-    bool plus, e, x;
+    int flags = 0;
+    bool plus;
 
     for (size_t i=1;; i++) {
         switch (mode[i]) {
@@ -18,13 +19,15 @@ parse_mode_string(const char* mode)
             break;
 
         case 'x':
-            if (x) goto fail;
-            x = true;
+            if (flags & O_EXCL)
+                goto fail;
+            flags |= O_EXCL;
             break;
 
         case 'e':
-            if (e) goto fail;
-            e = true;
+            if (flags & O_CLOEXEC)
+                goto fail;
+            flags |= O_CLOEXEC;
             break;
 
         case 'b':
@@ -39,29 +42,23 @@ parse_mode_string(const char* mode)
     }
 
 string_end:
-    int flags;
-
     switch (first) {
     case 'r':
-        flags = plus ? O_RDWR : O_RDONLY;
+        flags |= plus ? O_RDWR : O_RDONLY;
         break;
 
     case 'w':
-        flags = (plus ? O_RDWR : O_WRONLY) | O_CREAT | O_TRUNC;
+        flags |= (plus ? O_RDWR : O_WRONLY) | O_CREAT | O_TRUNC;
         break;
 
     case 'a':
-        flags = (plus ? O_RDWR : O_WRONLY) | O_CREAT | O_APPEND;
+        flags |= (plus ? O_RDWR : O_WRONLY) | O_CREAT | O_APPEND;
         break;
 
     default:
         goto fail;
     }
 
-    if (e)
-        flags |= O_CLOEXEC;
-    if (x)
-        flags |= O_EXCL;
 
     return flags;
 
@@ -113,7 +110,7 @@ fopen(const char* path, const char* mode)
     if (oflags == 0)
         return nullptr;
 
-    int fd = openat(__libc_working_dirfd, path, oflags, 0444);
+    int fd = openat(__libc_working_dirfd, path, oflags, 0666);
     if (fd == -1)
         return nullptr;
 

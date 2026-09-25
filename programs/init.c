@@ -98,12 +98,60 @@ setup_stdout()
     }
 }
 
+struct ustar_record {
+    char name[100];
+    char mode[8];
+    char uid[8];
+    char gid[8];
+    char size[12];
+    char mtime[12];
+    char chksum[8];
+    char typeflag;
+    char linkname[100];
+    char magic[6];
+    char version[2];
+    char uname[32];
+    char gname[32];
+    char devmajor[8];
+    char devmidor[8];
+    char prefix[155];
+};
+
+static size_t
+read_octal(const char* s)
+{
+    size_t value = 0;
+    while (*s)
+        value = value * 8 + *s++ - '0';
+    return value;
+}
+
+static void
+ls_ramdisk()
+{
+    int fd = _fluke_kopen("/initrd.tar");
+    FILE* f = fdopen(fd, "r");
+
+    size_t n;
+    struct ustar_record record;
+    while ((n = fread(&record, 512, 1, f))) {
+        if (!record.name[0])
+            break;
+        auto length = read_octal(record.size);
+        printf("%c %8zu %s\n", record.typeflag, length, record.name);
+        int skip = (length + 511) / 512;
+        fseek(f, skip * 512, SEEK_CUR);
+    }
+}
+
 int main()
 {
     setup_stdout();
 
     serial_setup();
     test_fault();
+
+    ls_ramdisk();
 
     puts("Hello from init process");
     printf("printf %s %p %d %f\n", __PRETTY_FUNCTION__, main, 123456, 123.456);

@@ -39,6 +39,7 @@ int     execvp(const char* __file, char* const __argv[]) __NOTHROW;
 int     fexecve(int __fd, char* const __argv[], char* const __envp[]) __NOTHROW;
 pid_t   fork() __NOTHROW;
 pid_t   getpid() __NOTHROW;
+off_t   lseek(int __fd, off_t __offset, int __whence) __NOTHROW;
 ssize_t read(int __fd, void* __restrict__ __buf, size_t __size) __NOTHROW;
 ssize_t write(int __fd, const void* __restrict__ __buf, size_t __size) __NOTHROW;
 

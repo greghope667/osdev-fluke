@@ -27,6 +27,7 @@ int     _fluke_irq_ack_wait(int irqd, long wait_ns);
 void    _fluke_panic(const char* reason) __NORETURN;
 int     _fluke_thread_spawn(void (*function)(long), void* stack, long arg);
 void    _fluke_nsleep(long nanoseconds);
+int     _fluke_kopen(const char*);
 
 typedef int (*_fluke_ipc_callback)(
     long handle, long aptr, long alen,

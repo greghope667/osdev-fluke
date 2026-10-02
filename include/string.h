@@ -13,13 +13,16 @@ int     memcmp(const void*, const void*, size_t __len) __NOTHROW;
 void*   memcpy(
             void* __restrict __dst, const void* __restrict __src, size_t __len
             ) __NOTHROW;
+void*   memmove(void* __dst, const void* __src, size_t __len) __NOTHROW;
 void*   memset(void* __s, int __ch, size_t __len) __NOTHROW;
 
 char*   strcat(char* __restrict __dst, const char* __restrict __src) __NOTHROW;
 char*   strchr(const char* __s, int ch) __NOTHROW;
 int     strcmp(const char*, const char*) __NOTHROW;
 char*   strcpy(char* __restrict __dst, const char* __restrict __src) __NOTHROW;
+char*   strdup(const char* __s);
 size_t  strlen(const char* __str) __NOTHROW;
+char*   strndup(const char* __s, size_t __maxlen);
 size_t  strnlen(const char* __str, size_t __maxlen) __NOTHROW;
 
 

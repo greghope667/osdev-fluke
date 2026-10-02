@@ -12,7 +12,6 @@ typedef __uint16_t      uint16_t;
 typedef __uint32_t      uint32_t;
 typedef __uint64_t      uint64_t;
 
-/*
 typedef __int8_t        int_least8_t;
 typedef __int16_t       int_least16_t;
 typedef __int32_t       int_least32_t;
@@ -22,6 +21,7 @@ typedef __uint16_t      uint_least16_t;
 typedef __uint32_t      uint_least32_t;
 typedef __uint64_t      uint_least64_t;
 
+/*
 typedef __int32_t       int_fast8_t;
 typedef __int32_t       int_fast16_t;
 typedef __int32_t       int_fast32_t;
@@ -48,4 +48,8 @@ typedef __UINTMAX_TYPE__    uintmax_t;
 #define UINT64_C(v)     __UINT64_C(v)
 #define UINTMAX_C(v)    __UINTMAX_C(v)
 
+#define UINT16_MAX      __UINT16_MAX__
+#define UINT32_MAX      __UINT32_MAX__
+
 #define PTRDIFF_MAX     __PTRDIFF_MAX__
+#define SIZE_MAX        __SIZE_MAX__

@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <fluke/defs/fluke.h>
 #include <fluke/fluke.h>
 #include <unistd.h>
@@ -126,22 +127,52 @@ read_octal(const char* s)
     return value;
 }
 
+#include "khash.h"
+struct file_contents { void* data; size_t size; };
+KHASH_MAP_INIT_STR(fs, struct file_contents)
+
+void malloc_stats(void);
+
 static void
 ls_ramdisk()
 {
+    malloc_stats();
+    int ret;
+    khash_t(fs)* fs = kh_init(fs);
+
     int fd = _fluke_kopen("/initrd.tar");
-    FILE* f = fdopen(fd, "r");
+    FILE *f = fdopen(fd, "r");
 
     size_t n;
     struct ustar_record record;
     while ((n = fread(&record, 512, 1, f))) {
         if (!record.name[0])
             break;
+
         auto length = read_octal(record.size);
         printf("%c %8zu %s\n", record.typeflag, length, record.name);
-        int skip = (length + 511) / 512;
-        fseek(f, skip * 512, SEEK_CUR);
+        int blocks = (length + 511) / 512;
+        if (length) {
+            struct file_contents contents = {
+                .data = malloc(length),
+                .size = length,
+            };
+            fread(contents.data, length, 1, f);
+
+            auto name = strndup(record.name, sizeof(record.name));
+            auto i = kh_put(fs, fs, name, &ret);
+            kh_val(fs, i) = contents;
+        }
+        fseek(f, blocks * 512 - length, SEEK_CUR);
     }
+
+    {
+        const char* key; struct file_contents value;
+        kh_foreach(fs, key, value, {
+            printf("%s %zu\n", key, value.size);
+        });
+    }
+    malloc_stats();
 }
 
 int main()

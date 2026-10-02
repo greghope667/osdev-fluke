@@ -8,3 +8,5 @@
 
 typedef __ptrdiff_t ptrdiff_t;
 typedef __size_t size_t;
+
+typedef union { long double __ld; long long int __i; } max_align_t;

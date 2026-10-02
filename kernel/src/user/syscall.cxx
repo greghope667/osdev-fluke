@@ -316,9 +316,9 @@ syscall(Context ctx, Thread_context* thread_ctx)
 }
 
 const char*
-syscall_get_name(Context ctx)
+syscall_get_name(isize syscallno)
 {
-    usize index = CTX_SYS_OP(ctx) - SYSCALL_nop;
+    usize index = syscallno - SYSCALL_nop;
     if (index >= syscalls.count())
         return "(unnamed)";
     return syscalls[index].name ?: "(unnamed)";

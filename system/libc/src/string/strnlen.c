@@ -4,5 +4,5 @@ size_t
 strnlen(const char* s, size_t maxlen)
 {
     auto found = memchr(s, 0, maxlen);
-    return found ? (const char*)found - s : maxlen;
+    return found ? (size_t)((const char*)found - s) : maxlen;
 }

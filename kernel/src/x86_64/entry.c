@@ -122,12 +122,20 @@ syscall_entry(struct Registers* ctx)
     //     CTX_SYS_A3(ctx), CTX_SYS_A4(ctx), CTX_SYS_A5(ctx)
     // );
     // print_registers(ctx);
+
+    int syscallno = CTX_SYS_OP(ctx);
     this_tls->user_context = ctx;
     CTX_SYS_R0(ctx) = syscall(ctx, this_tls->current_thread);
     // klog("Syscall response: %zx\n", CTX_SYS_R0(ctx));
-    // isize errno = CTX_SYS_R0(ctx);
-    // if (-1000 < errno && errno < 0)
-    //     klog("    errno = %zi\n", -errno);
+
+    isize errno = CTX_SYS_R0(ctx);
+    if (-1000 < errno && errno < 0) {
+        klog(
+            "syscall failed: %x %s, errno = %zi\n",
+             syscallno, syscall_get_name(syscallno),
+             -errno
+        );
+    }
 
     // If thread has been scheduled away, syscall() should not return
     assert(this_tls->current_thread != nullptr);

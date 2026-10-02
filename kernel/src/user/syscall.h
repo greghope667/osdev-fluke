@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 usize syscall(Context context, struct Thread_context* thread_ctx);
-const char* syscall_get_name(Context context);
+const char* syscall_get_name(isize syscallno);
 
 #ifdef __cplusplus
 } // extern C

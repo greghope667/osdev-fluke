@@ -22,6 +22,7 @@ void    exit(int __status) __NOTHROW __NORETURN;
 void    free(void*) __NOTHROW;
 char*   getenv(const char* __key) __NOTHROW;
 void*   malloc(size_t __bytes) __NOTHROW;
+void*   realloc(void* __ptr, size_t __newsize);
 
 #ifdef __cplusplus
 } // extern C

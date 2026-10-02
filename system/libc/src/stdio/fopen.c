@@ -99,6 +99,10 @@ __libc_fdopen(int fd, int oflags)
 FILE*
 fdopen(int fd, const char* mode)
 {
+    if (fd == -1) {
+        errno = EBADF;
+        return nullptr;
+    }
     int oflags = parse_mode_string(mode);
     return oflags ? __libc_fdopen(fd, oflags) : nullptr;
 }

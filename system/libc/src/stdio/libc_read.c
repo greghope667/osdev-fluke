@@ -7,6 +7,9 @@ __libc_read(FILE* f, void* data, size_t size)
     long ctx = f->fd;
     auto readfn = (int(*)(long, void*, size_t))(void*)f->readfn;
 
+    if (f->eof)
+        return 0;
+
     for (size_t remaining = size; remaining > 0; ) {
         int n = remaining > INT_MAX ? INT_MAX : remaining;
         n = readfn(ctx, data, (unsigned)n);

@@ -19,7 +19,8 @@ extern "C" {
 struct _fluke_lpair { long first; long second; };
 struct _fluke_ipair { int  first; long second; };
 
-long    _fluke_forth_interpret(const char*);
+struct _fluke_lpair
+        _fluke_forth_interpret(const char*);
 void    _fluke_klog(const char*);
 void*   _fluke_virtual_map(void* address, size_t len, int prot, int flags);
 int     _fluke_irq_claim(int irq);

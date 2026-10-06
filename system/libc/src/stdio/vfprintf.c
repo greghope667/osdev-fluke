@@ -203,9 +203,7 @@ print_fmt_arg(output* o, const char** fmt, va_list args)
             case 's':
                 return print_string(o, &afmt, args);
             case 'p':
-                afmt.width = 16;
                 afmt.length = 2;
-                afmt.zero_pad = true;
                 return print_hex(o, &afmt, args);
             case '%':
                 putchar('%');

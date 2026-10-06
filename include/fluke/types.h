@@ -16,13 +16,15 @@ typedef __UINT64_TYPE__     __uint64_t;
 typedef __SIZE_TYPE__       __size_t;
 typedef __UINTPTR_TYPE__    __uintptr_t;
 
-#ifdef __cplusplus
-static_assert(sizeof(__int8_t) == 1);
-static_assert(sizeof(__int16_t) == 2);
-static_assert(sizeof(__int32_t) == 4);
-static_assert(sizeof(__int64_t) == 8);
-static_assert(sizeof(__size_t) == sizeof(void*));
-#endif
+extern char __static_check_type_sizes[
+    sizeof(__int8_t)  == 1 &&
+    sizeof(__int16_t) == 2 &&
+    sizeof(__int32_t) == 4 &&
+    sizeof(__int64_t) == 8 &&
+    sizeof(__size_t)  == 8 &&
+    sizeof(void*)     == 8
+    ? 1 : -1
+];
 
 typedef __uint64_t              __blkcnt_t;
 typedef __uint64_t              __blksize_t;

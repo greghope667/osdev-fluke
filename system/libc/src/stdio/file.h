@@ -4,7 +4,7 @@
 struct FILE {
     union {
         long fd;
-        const void* cookie;
+        void* cookie;
     };
     bool error, eof;
     int (*writefn)(void*, const char*, int);

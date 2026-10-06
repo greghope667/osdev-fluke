@@ -48,6 +48,12 @@ long    ftell(FILE*);
 off_t   ftello(FILE*);
 size_t  fwrite(const void* __buf, size_t __item_size, size_t __nitems, FILE*);
 
+ssize_t getdelim(
+            char** __restrict __lineptr, size_t* __restrict __n,
+            int __delim, FILE*
+            );
+ssize_t getline(char** __restrict __lineptr, size_t* __restrict __n, FILE*);
+
 int     getchar();
 int     putchar(int __ch);
 

@@ -171,7 +171,6 @@ void malloc_stats(void);
 static void
 ls_ramdisk()
 {
-    malloc_stats();
     int ret;
     map_fs* h = map_fs_init();
 
@@ -221,10 +220,31 @@ ls_ramdisk()
 }
 
 static void
+hello_process()
+{
+    if (fork() == 0) {
+        int fd = _fluke_kopen("/hello");
+        static char* const args[] = {
+            "hello", "123", "abc", 0
+        };
+        static char* const env[] = {
+            "EDITOR=vim", 0
+        };
+        fexecve(fd, args, env);
+    }
+    _fluke_nsleep(1'000'000'000);
+}
+
+static long
+nanoseconds()
+{
+    return _fluke_forth_interpret("0 nanoseconds ccall1").second;
+}
+
+static void
 time()
 {
-    auto p = _fluke_forth_interpret("0 nanoseconds ccall1");
-    size_t ns = p.second;
+    size_t ns = nanoseconds();
     printf("time %6lu.%09lu\n", ns / 1'000'000'000, ns % 1'000'000'000);
 }
 
@@ -234,8 +254,11 @@ int main()
     dup2(tty, 0);
     dup2(tty, 1);
     dup2(tty, 2);
+    printf("tty = %i\n", tty);
 
     test_fault();
+
+    hello_process();
 
     ls_ramdisk();
 
@@ -260,6 +283,8 @@ int main()
             time();
         } else if (strcmp(line, "exit") == 0) {
             break;
+        } else if (strcmp(line, "boom") == 0) {
+            _fluke_forth_interpret("0 mmu_set_address_space ccall1");
         }
 
         free(line);

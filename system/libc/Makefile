@@ -43,13 +43,13 @@ build/%.o: %.cxx | dirs
 	$(CC) $(CXXFLAGS) -c $< -MMD -MF build/$*.d -o $@
 
 build/%.o: %.S | dirs
-	$(CC) -c $< -o $@
+	$(CC) $(ASMFLAGS) -c $< -o $@
 
 libc.a: $(OBJS)
 	$(AR) $(ARFLAGS) -s $@ $?
 
 crt1.o: crt/crt1.S
-	$(CC) -c $< -o $@
+	$(CC) $(ASMFLAGS) -c $< -o $@
 
 ### Named targets
 

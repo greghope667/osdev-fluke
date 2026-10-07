@@ -47,6 +47,17 @@ int     _fluke_ipc_listen(
 
 int     _fluke_ipc_respond(long status, long aptr, long alen, int mode);
 
+struct _fluke_user_shared_object {
+    const void* object;
+    char name[32];
+};
+
+struct _fluke_user_shared_object*
+        _fluke_user_share();
+
+const void*
+        _fluke_user_share_name(const char* name);
+
 #ifdef __cplusplus
 } // extern C
 #endif

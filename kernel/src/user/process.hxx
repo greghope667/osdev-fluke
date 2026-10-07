@@ -27,6 +27,8 @@ struct Thread : Thread_context, pinned {
     void push_into(Queue*);
     static Thread* pop_from(Queue*);
 
+    void exit(int status);
+
     Process& get_process();
 };
 
@@ -59,6 +61,8 @@ struct Process : pinned {
     Descriptor_table descriptors = {};
     Tree threads = {};
     State state = SPAWNING;
+
+    // TODO: add ipc servers
 
     static result<Process*> create();
     result<Thread*> spawn_thread(usize code, usize stack, usize arg);

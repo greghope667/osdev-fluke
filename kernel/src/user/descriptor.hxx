@@ -5,19 +5,18 @@
 #include "handle.hxx"
 
 struct Descriptor {
-    Handle* handle;
-    bool open;
-    // bool cloexec;
-    // u32 flags;
+    Handle* _handle;
 
-    void assign(Handle*);
+    void assign(Handle*, bool cloexec);
     void close();
-    ~Descriptor() { if (open) handle->release(); }
-};
 
-// struct Descriptor_table_l2 {
-    // struct Descriptor_table_l1* l1[32];
-// };
+    void set_cloexec()      { _handle = (Handle*)((usize)_handle | 1zu); }
+    void clear_cloexec()    { _handle = (Handle*)((usize)_handle & ~1zu); }
+    bool is_cloexec()       { return (usize)_handle & 1; }
+    Handle* handle()        { return (Handle*)((usize)_handle & ~1zu); }
+    bool is_open()          { return _handle; }
+    ~Descriptor()           { if (_handle) _handle->release(); }
+};
 
 struct Descriptor_table {
     static constexpr int L0 = 8;
@@ -31,13 +30,13 @@ struct Descriptor_table {
 
     table_l0 l0 = {};
     table_l1 l1 = {};
-    // struct Descriptor_table_l2* l2[4];
 
     result<Descriptor*> alloc(int& fd_out);
     result<Descriptor*> alloc_overwrite(int fd);
     result<Descriptor*> get(int fd);
     result<void> close(int fd);
     result<void> clone(Descriptor_table& to);
+    void cloexec();
 };
 
 // struct Descriptor* descriptor_reserve(struct Descriptor_table*, int* fd);

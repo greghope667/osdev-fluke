@@ -4,22 +4,20 @@
 #include "handle.hxx"
 
 void
-Descriptor::assign(Handle* h)
+Descriptor::assign(Handle* h, bool cloexec)
 {
-    assert(not open);
+    assert(not is_open());
     assert(h->refcount() >= 0);
-    handle = h;
-    handle->dup();
-    open = true;
+    h->dup();
+    _handle = (Handle*)((usize)h | (usize)cloexec);
 }
 
 void
 Descriptor::close()
 {
-    assert(open);
-    open = false;
-    handle->release();
-    handle = nullptr;
+    assert(is_open());
+    handle()->release();
+    _handle = nullptr;
 }
 
 constexpr int DIRECT = Descriptor_table::L0;
@@ -32,7 +30,7 @@ Descriptor_table::alloc(int& fd)
 
     // Direct entries
     for (auto& desc : l0) {
-        if (not desc.open) {
+        if (not desc.is_open()) {
             fd = n;
             return &desc;
         }
@@ -48,7 +46,7 @@ Descriptor_table::alloc(int& fd)
         }
 
         for (auto& desc : *l0) {
-            if (not desc.open) {
+            if (not desc.is_open()) {
                 fd = n;
                 return &desc;
             }
@@ -68,7 +66,7 @@ Descriptor_table::alloc_overwrite(int fd)
 
     if (fd < DIRECT) {
         auto& desc = l0[fd];
-        if (desc.open)
+        if (desc.is_open())
             desc.close();
         return &desc;
     }
@@ -79,7 +77,7 @@ Descriptor_table::alloc_overwrite(int fd)
         if (!l0)
             l0 = TRY(owned<table_l1l0>::make());
         auto& desc = (*l0)[fd % L1L0];
-        if (desc.open)
+        if (desc.is_open())
             desc.close();
         return &desc;
     }
@@ -97,7 +95,7 @@ Descriptor_table::get(int fd)
 
     if (fd < DIRECT) {
         auto& desc = l0[fd];
-        if (not desc.open)
+        if (not desc.is_open())
             return fail;
         return &desc;
     }
@@ -108,7 +106,7 @@ Descriptor_table::get(int fd)
         if (!l0)
             return fail;
         auto& desc = (*l0)[fd % L1L0];
-        if (not desc.open)
+        if (not desc.is_open())
             return fail;
         return &desc;
     }
@@ -128,9 +126,9 @@ static void
 clone(std::array<Descriptor, N>& from, std::array<Descriptor, N>& to)
 {
     for (size_t i=0; i<N; i++) {
-        assert(not to[i].open);
-        if (from[i].open) {
-            to[i].assign(from[i].handle);
+        assert(not to[i].is_open());
+        if (from[i].is_open()) {
+            to[i].assign(from[i].handle(), from[i].is_cloexec());
         }
     }
 }
@@ -147,4 +145,22 @@ Descriptor_table::clone(Descriptor_table& to)
         }
     }
     return {};
+}
+
+void
+Descriptor_table::cloexec()
+{
+    for (auto& desc : l0) {
+        if (desc.is_cloexec())
+            desc.close();
+    }
+    for (auto& l0 : l1) {
+        if (not l0)
+            continue;
+
+        for (auto& desc : *l0) {
+            if (desc.is_cloexec())
+                desc.close();
+        }
+    }
 }

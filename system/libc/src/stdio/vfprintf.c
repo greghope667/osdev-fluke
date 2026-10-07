@@ -19,6 +19,14 @@ typedef struct output {
     jmp_buf throw;
 } output;
 
+__attribute((noreturn, cold))
+static void
+error(output* o, int errc)
+{
+    errno = errc;
+    _longjmp(o->throw, -1);
+}
+
 static void
 _fwrite(output* o, const char* buf, size_t len)
 {
@@ -26,23 +34,14 @@ _fwrite(output* o, const char* buf, size_t len)
         _longjmp(o->throw, -1);
 
     o->printed += len;
-    if (o->printed > INT_MAX) {
-        errno = EOVERFLOW;
-        _longjmp(o->throw, -1);
-    }
+    if (o->printed > INT_MAX)
+        error(o, EOVERFLOW);
 }
 
 static void
 _fwritec(output* o, char c)
 {
     return _fwrite(o, &c, 1);
-}
-
-static void
-error(output* o, int errc)
-{
-    errno = errc;
-    _longjmp(o->throw, -1);
 }
 
 static int
@@ -161,8 +160,11 @@ static void
 print_string(output* o, struct fmt_specifier* afmt, va_list args)
 {
     const char* str = va_arg(args, const char*);
-    int max = afmt->has_precision ? afmt->precision : INT_MAX;
-    int chars = strnlen(str, max);
+    size_t chars =
+        afmt->has_precision ?
+        strnlen(str, afmt->precision) : strlen(str);
+    if (chars > INT_MAX)
+        error(o, EOVERFLOW);
     pad(o, afmt, chars);
     _fwrite(o, str, chars);
 }

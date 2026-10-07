@@ -13,7 +13,7 @@ dirs:
 
 ### ISO build
 
-PROGRAMS = init
+PROGRAMS = init hello
 
 ISOPROG = $(PROGRAMS:%=build/%)
 
@@ -27,7 +27,7 @@ ISOFILES = \
 	build/EFI/BOOT/BOOTX64.EFI \
 
 build/%: ../programs/%.c | dirs
-	$(CC) -O $< -o $@
+	$(CC) -O -g $< -o $@
 
 build/boot/limine/%: $(LIMINE_DATA)/% | dirs
 	cp $< $@

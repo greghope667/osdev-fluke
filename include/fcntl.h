@@ -2,6 +2,7 @@
 // https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/fcntl.h.html
 
 #include <fluke/types.h>
+#include <fluke/defs/fcntl.h>
 
 typedef __mode_t        mode_t;
 typedef __off_t         off_t;
@@ -26,27 +27,6 @@ struct flock {
 #define F_UNLCK             2
 #define F_WRLCK             3
 */
-
-// oflags
-
-#define O_EXEC          (1 << 0)
-#define O_RDONLY        (1 << 1)
-#define O_RDWR          (1 << 2)
-#define O_SEARCH        (1 << 3)
-#define O_WRONLY        (1 << 4)
-
-#define O_APPEND        (1 << 5)
-#define O_CLOEXEC       (1 << 6)
-#define O_CLOFORK       (1 << 7)
-#define O_CREAT         (1 << 8)
-#define O_DIRECTORY     (1 << 9)
-#define O_EXCL          (1 << 10)
-#define O_NOCTTY        (1 << 11)
-#define O_NOFOLLOW      (1 << 12)
-#define O_NONBLOCK      (1 << 13)
-#define O_SYNC          (1 << 14)
-#define O_TRUNC         (1 << 15)
-
 
 #ifdef __cplusplus
 extern "C" {

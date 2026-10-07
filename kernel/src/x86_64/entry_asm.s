@@ -217,7 +217,7 @@ syscall_entry_asm:
 
         popall
 
-        mov     rsp, gs:CPU_OFFSET_USER_SP
+        mov     rsp, [rsp + 40]                         # Saved user RSP
         swapgs
         sysretq
 

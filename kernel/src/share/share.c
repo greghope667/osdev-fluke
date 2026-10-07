@@ -9,7 +9,7 @@ extern const char user_share_exec_elf[];
 #define UCONST __attribute__((section(".userconst")))
 
 static const UCONST struct user_shared_object objects[] = {
-    { user_share_exec_elf, "exec_elf" },
+    { user_share_exec_elf, "exec_loadelf" },
     { 0, },
 };
 

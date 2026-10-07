@@ -43,6 +43,20 @@ print_registers(struct Registers* ctx)
 extern char __memcpy_catch_fault_op[];
 extern char __memcpy_catch_fault_err[];
 
+static void
+print_page_fault_info(struct Registers* ctx)
+{
+    printf("Page fault\n    address %zx ", read_CR(2));
+    auto err = ctx->error_code;
+    printf(
+        "%s %s %s %s\n",
+        err & (1 << 0) ? "protection" : "not-present",
+        err & (1 << 1) ? "write" : "read",
+        err & (1 << 2) ? "user" : "supervisor",
+        err & (1 << 4) ? "instruction" : "data"
+    );
+}
+
 void
 exception_kernel_entry(u8 exception, struct Registers* ctx)
 {
@@ -64,17 +78,8 @@ exception_kernel_entry(u8 exception, struct Registers* ctx)
 
     console_setcolor(COLOR_BRIGHT_RED, COLOR_BLACK);
     klog("Exception\nExn %u  error 0x%zx  cs %zu  ss %zu:\n", exception, ctx->error_code, ctx->cs, ctx->ss);
-    if (exception == 14) {
-        printf("Page fault\n    address %zx ", read_CR(2));
-        auto err = ctx->error_code;
-        printf(
-            "%s %s %s %s\n",
-            err & (1 << 0) ? "protection" : "not-present",
-            err & (1 << 1) ? "write" : "read",
-            err & (1 << 2) ? "user" : "supervisor",
-            err & (1 << 4) ? "instruction" : "data"
-        );
-    }
+    if (exception == 14)
+        print_page_fault_info(ctx);
     print_registers(ctx);
     show_backtrace((void*)ctx->rbp);
     panic("Unhandled kernel exception");
@@ -85,11 +90,8 @@ exception_user_entry(u8 exception, struct Registers* ctx)
 {
     console_setcolor(COLOR_BRIGHT_MAGENTA, COLOR_BLACK);
     klog("Exception %u  error %zx  cs %zu  ss %zu:\n", exception, ctx->error_code, ctx->cs, ctx->ss);
-    if (exception == 14) {
-        usize cr2;
-        asm ("mov   %%cr2, %0" : "=r"(cr2));
-        printf("Page fault address: %zx\n", cr2);
-    }
+    if (exception == 14)
+        print_page_fault_info(ctx);
     print_registers(ctx);
     panic("Unhandled user exception");
 }
@@ -98,7 +100,6 @@ void
 interrupt_entry(u8 interrupt, struct Registers* ctx)
 {
     // klog("Interrupt %u  cs %zu  ss %zu:\n", interrupt, ctx->cs, ctx->ss);
-    // print_registers(ctx);
     if (interrupt < 254) {
         int irq = x86_64_ioapic_isr_to_irq(interrupt);
         if (irq < 0)
@@ -116,17 +117,20 @@ interrupt_entry(u8 interrupt, struct Registers* ctx)
 void
 syscall_entry(struct Registers* ctx)
 {
-    // klog("Syscall %zx %s: (%zx, %zx, %zx, %zx, %zx, %zx)\n",
-    //     CTX_SYS_OP(ctx), syscall_get_name(ctx),
-    //     CTX_SYS_A0(ctx), CTX_SYS_A1(ctx), CTX_SYS_A2(ctx),
-    //     CTX_SYS_A3(ctx), CTX_SYS_A4(ctx), CTX_SYS_A5(ctx)
-    // );
-    // print_registers(ctx);
+#if 0
+    klog("Syscall %zx %s: (%zx, %zx, %zx, %zx, %zx, %zx)\n",
+        CTX_SYS_OP(ctx), syscall_get_name(CTX_SYS_OP(ctx)),
+        CTX_SYS_A0(ctx), CTX_SYS_A1(ctx), CTX_SYS_A2(ctx),
+        CTX_SYS_A3(ctx), CTX_SYS_A4(ctx), CTX_SYS_A5(ctx)
+    );
+#endif
 
     int syscallno = CTX_SYS_OP(ctx);
     this_tls->user_context = ctx;
     CTX_SYS_R0(ctx) = syscall(ctx, this_tls->current_thread);
-    // klog("Syscall response: %zx\n", CTX_SYS_R0(ctx));
+#if 0
+    klog("Syscall response: %zx\n", CTX_SYS_R0(ctx));
+#endif
 
     isize errno = CTX_SYS_R0(ctx);
     if (-1000 < errno && errno < 0) {

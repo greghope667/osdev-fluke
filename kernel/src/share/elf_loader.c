@@ -9,12 +9,12 @@
  * symbols
  */
 
-#include </usr/include/elf.h>
+#include <elf.h>
 #include "kdef.h"
 #include <fluke/defs/fluke.h>
 
 #define UTEXT __attribute__((section(".usertext")))
-#define UCONST __attribute__((section(".userconst")))
+// #define UCONST __attribute__((section(".userconst")))
 #define INLINE __attribute__((always_inline)) inline
 
 asm (
@@ -25,23 +25,18 @@ asm (
 "       rep movsb\n"
 "       ret\n"
 
-"trampoline:\n"
+"       .global user_share_exec_elf\n"
+
+"user_share_exec_elf:\n"
 "       xor     %ebp, %ebp\n"
-"       mov     %rdx, %rsp\n"
+"       mov     %rsi, %rsp\n"
 "       call    exec_elf_stage2\n"
-"       jmp     *%rax\n"
 
 "fail:\n"
 "       hlt\n"
 "       .popsection\n"
 );
 
-extern void trampoline(
-    int fd,
-    long stack_base,
-    void* stack_ptr,
-    Elf64_Ehdr* elf
-) __attribute__((noreturn));
 extern void* memcpy(void*, const void*, usize);
 extern void fail() __attribute__((noreturn));
 
@@ -85,7 +80,7 @@ syscall4(long rax, long a1, long a2, long a3, long a4)
 UTEXT static void
 map_fixed(long base, long size, int flags)
 {
-    if (syscall4(SYSCALL_virtual_map, base, size, flags, MAP_FIXED) <= 0)
+    if (syscall4(SYSCALL_virtual_map, base, size, flags, MAP_FIXED) != base)
         fail();
 }
 
@@ -96,49 +91,18 @@ unmap(long base, long size)
         fail();
 }
 
-UTEXT static bool
+UTEXT static void
 read_into(int fd, void* buffer, long length, long offset)
 {
     long n = syscall3(SYSCALL_seek, fd, offset, SEEK_SET);
-    if (n < 0) return false;
+    if (n < 0) fail();
 
     while (length > 0) {
         n = syscall3(SYSCALL_read, fd, (long)buffer, length);
-        if (n <= 0) return false;
+        if (n <= 0) fail();
         buffer += n;
         length -= n;
     }
-    return true;
-}
-
-
-/* Basic checks to see if this looks like a valid elf structure.
- * If not, don't even attempt to load it + report an error to the user.
- * We don't need to strictly check everything here as this is in an isolated
- * user space process so any out of bounds reads/writes are not dangerous.
- */
-UTEXT bool
-check_elf_valid(Elf64_Ehdr* elf)
-{
-    UCONST static const char IDENT[] = "\177ELF\2\1\1\0";
-
-    for (int i=0; i<8; i++)
-        if (elf->e_ident[i] != IDENT[i])
-            return false;
-
-    if (elf->e_entry == 0)
-        return false;
-
-    if (elf->e_phoff == 0)
-        return false;
-
-    if (elf->e_phentsize != sizeof(Elf64_Phdr))
-        return false;
-
-    if (elf->e_phnum == 0)
-        return false;
-
-    return true;
 }
 
 UTEXT static void
@@ -146,47 +110,10 @@ load_segment(int fd, Elf64_Phdr* phdr)
 {
     long base = ROUND_DOWN_P2(phdr->p_vaddr, PAGE_SIZE);
     long end = ROUND_UP_P2(phdr->p_vaddr + phdr->p_memsz, PAGE_SIZE);
-    const int flags = PROT_READ|PROT_WRITE|PROT_EXEC;
+    const int flags = PROT_READ|PROT_WRITE|(phdr->p_flags & PF_X ? PROT_EXEC : 0);
 
     map_fixed(base, end - base, flags);
-    if (!read_into(fd, (void*)phdr->p_vaddr, phdr->p_filesz, phdr->p_offset))
-        fail();
-}
-
-#define STACK_SIZE 0x10000
-
-UTEXT static long
-create_stack()
-{
-    long rng = (long)__builtin_ia32_rdtsc() & 0xff'ffff;
-    long base = 0x7f00'0000'0000 | (rng << 16);
-    return syscall4(SYSCALL_virtual_map, base, STACK_SIZE, PROT_READ|PROT_WRITE, 0);
-}
-
-UTEXT int
-user_share_exec_elf(int fd)
-{
-    Elf64_Ehdr elf;
-    if (!read_into(fd, &elf, sizeof(elf), 0))
-        return -EIO;
-
-    if (!check_elf_valid(&elf))
-        return -ENOEXEC;
-
-    long stack_base = create_stack();
-    if (stack_base <= 0)
-        return -ENOMEM;
-
-    // Basic checks now done. At this point, we've committed to the
-    // attempt to exec the file. Errors are now process-exit
-
-    // syscall(SYS_exec_flush_old)
-    // stack_add_args()
-    long* stack_ptr = (long*)(stack_base + STACK_SIZE);
-    for (int i=0; i<4; i++)
-        *--stack_ptr = 0;
-
-    trampoline(fd, stack_base, stack_ptr, &elf);
+    read_into(fd, (void*)phdr->p_vaddr, phdr->p_filesz, phdr->p_offset);
 }
 
 UTEXT static void
@@ -200,8 +127,7 @@ load_elf_segments(int fd, Elf64_Ehdr* elf)
     for (int i=0; i<phnum; i++) {
         Elf64_Phdr phdr;
         long phdr_location = phoff + i * sizeof(phdr);
-        if (!read_into(fd, &phdr, sizeof(phdr), phdr_location))
-            fail();
+        read_into(fd, &phdr, sizeof(phdr), phdr_location);
 
         switch (phdr.p_type) {
         case PT_LOAD:
@@ -225,22 +151,18 @@ load_elf_segments(int fd, Elf64_Ehdr* elf)
     }
 }
 
-/* Stage 2 - operating on new stack. Returning from this function
- * jumps to the new address (elf entry point)
- */
-UTEXT long
-exec_elf_stage2(int fd, long stack_base, void* stack_ptr, Elf64_Ehdr* elf_)
+__attribute__((noreturn))
+UTEXT void
+exec_elf_stage2(int fd, usize stack_ptr, usize stack_base, usize stack_top)
 {
-    (void)stack_ptr;
-
     Elf64_Ehdr elf;
-    memcpy(&elf, elf_, sizeof(elf)); // Copy data before unmapping
+    read_into(fd, &elf, sizeof(elf), 0);
 
-    const long stack_top = stack_base + STACK_SIZE;
     unmap(0, stack_base);
     unmap(stack_top, 0x8000'0000'0000 - stack_top);
 
     load_elf_segments(fd, &elf);
 
-    return elf.e_entry;
+    syscall2(SYSCALL_exec_flush, elf.e_entry, stack_ptr);
+    fail();
 }

@@ -57,7 +57,7 @@ SYSCALL(open_module)
     if (!handle)
         return error_code(ENOENT);
 
-    desc->assign(handle);
+    desc->assign(handle, false);
     return fd;
 }
 
@@ -72,7 +72,7 @@ SYSCALL(claim_irq)
     int fd = 0;
     auto desc = TRY(process.descriptors.alloc(fd));
     auto handle = TRY(irq_claim(CTX_SYS_A0(ctx)));
-    desc->assign(handle);
+    desc->assign(handle, true);
     return fd;
 }
 
@@ -116,7 +116,7 @@ SYSCALL(dup)
     else
         newdesc = TRY(process.descriptors.alloc(newfd));
 
-    newdesc->assign(olddesc->handle);
+    newdesc->assign(olddesc->handle(), CTX_SYS_A2(ctx) & O_CLOEXEC);
     return newfd;
 }
 
@@ -127,6 +127,16 @@ SYSCALL(close)
     return 0;
 }
 
+SYSCALL(exec_flush)
+{
+    process.descriptors.cloexec();
+    // TODO: this properly. maybe make cpu_context_flush() type call?
+    //       or just create new thread
+    ctx->rcx = CTX_SYS_A0(ctx);
+    ctx->rsp = CTX_SYS_A1(ctx);
+    return 0;
+}
+
 SYSCALL(read)
 {
     int fd = CTX_SYS_A0(ctx);
@@ -134,7 +144,7 @@ SYSCALL(read)
     isize len = std::min<usize>(CTX_SYS_A2(ctx), ISIZE_MAX);
 
     auto desc = TRY(process.descriptors.get(fd));
-    auto handle = desc->handle;
+    auto handle = desc->handle();
 
     TRY_ERRC(check_user_range(buffer, len));
 
@@ -148,7 +158,7 @@ SYSCALL(write)
     isize len = std::min<usize>(CTX_SYS_A2(ctx), ISIZE_MAX);
 
     auto desc = TRY(process.descriptors.get(fd));
-    auto handle = desc->handle;
+    auto handle = desc->handle();
 
     TRY_ERRC(check_user_range(buffer, len));
 
@@ -160,7 +170,7 @@ SYSCALL(seek)
 {
     int fd = CTX_SYS_A0(ctx);
     auto desc = TRY(process.descriptors.get(fd));
-    auto handle = desc->handle;
+    auto handle = desc->handle();
     return TRY(handle->seek(CTX_SYS_A1(ctx), CTX_SYS_A2(ctx)));
 }
 
@@ -169,7 +179,7 @@ SYSCALL(objctl)
     int fd = CTX_SYS_A0(ctx);
     unsigned op = CTX_SYS_A1(ctx);
     auto desc = TRY(process.descriptors.get(fd));
-    auto handle = desc->handle;
+    auto handle = desc->handle();
     return handle->ctl(ctx, op);
 }
 
@@ -213,6 +223,7 @@ SYSCALL(virtual_unmap)
     TRY_ERRC(check_user_range((void*)addr, len));
 
     TRY(process.vm.free(addr, len));
+    mmu_reload_address_space();
     return 0;
 }
 
@@ -236,7 +247,7 @@ SYSCALL(ipc_create)
     int fd;
     auto desc = TRY(process.descriptors.alloc(fd));
     auto ipc = TRY(IPC::create(transfers));
-    desc->assign(ipc->handle());
+    desc->assign(ipc->handle(), false);
     CTX_SYS_R1(ctx) = (usize)ipc;
     return fd;
 }
@@ -245,7 +256,7 @@ SYSCALL(ipc_call)
 {
     int fd = CTX_SYS_A0(ctx);
     auto desc = TRY(process.descriptors.get(fd));
-    return desc->handle->ipc_call(ctx);
+    return desc->handle()->ipc_call(ctx);
 }
 
 SYSCALL(ipc_listen)
@@ -284,6 +295,7 @@ static constexpr auto syscalls = []{
     ENTRY(fork);
     ENTRY(dup);
     ENTRY(close);
+    ENTRY(exec_flush);
     ENTRY(read);
     ENTRY(write);
     ENTRY(seek);
